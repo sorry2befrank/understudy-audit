@@ -1,0 +1,31 @@
+{
+  "id": "./audit-app.html",
+  "name": "Understudy Audit",
+  "short_name": "Audit",
+  "description": "On-device business audits with opt-in nearby restaurant research.",
+  "start_url": "./audit-app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F6F4EF",
+  "theme_color": "#0F6E5A",
+  "icons": [
+    {
+      "src": "./icons/audit-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/audit-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/audit-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

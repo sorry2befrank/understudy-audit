@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Understudy Audit</title>
+<meta name="description" content="On-device business audits with opt-in nearby restaurant research." />
+<meta name="theme-color" content="#0F6E5A" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Audit" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="stylesheet" href="./meetings.css" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/audit-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/audit-apple-180.png" />
+<style>
+  :root{
+    --paper:#F6F4EF;--card:#FFFFFF;--ink:#1B2A2E;--ink-2:#556361;--ink-3:#8A938F;
+    --line:#E4DFD6;--line-2:#EDE9E1;--save:#0F6E5A;--save-lite:#E1EDE8;--leak:#C2673B;--leak-lite:#F4E6DC;--gold:#B7902F;
+    --shadow:0 1px 0 rgba(27,42,46,.04),0 18px 40px -24px rgba(27,42,46,.28);
+    --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code",Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--save)}
+  #app{min-height:100%}
+  /* ---------- app chrome ---------- */
+  .appbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:14px clamp(16px,5vw,28px);
+    padding-top:max(14px,env(safe-area-inset-top));background:rgba(246,244,239,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .appbar .brand{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+  .appbar h1{font-family:var(--serif);font-size:1.3rem;margin:0;font-weight:600}
+  .appbar .sp{flex:1}
+  .wrap{max-width:760px;margin:0 auto;padding:clamp(16px,5vw,28px)}
+  .btn{font-family:var(--sans);font-size:.95rem;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);
+    padding:.6rem 1rem;border-radius:11px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.45rem}
+  .btn:hover{border-color:var(--save);color:var(--save)}
+  .btn.primary{background:var(--save);color:#fff;border-color:var(--save)}
+  .btn.primary:hover{color:#fff;filter:brightness(1.05)}
+  .btn.ghost{border-color:transparent;background:transparent;padding:.5rem .6rem}
+  .btn.danger:hover{border-color:var(--leak);color:var(--leak)}
+  .btn:focus-visible,.seg button:focus-visible,.pnav button:focus-visible,.pexit:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .muted{color:var(--ink-3);font-size:.9rem}
+  .notice{border-left:3px solid var(--save);padding:10px 12px;background:var(--save-lite);color:var(--ink-2);font-size:.88rem;margin:12px 0}
+  .notice.warn{border-left-color:var(--gold);background:#F4EEDC}.notice.error{border-left-color:var(--leak);background:var(--leak-lite);color:#7D3F24}
+  .search-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:14px}
+  .search-tools .btn{min-width:92px;justify-content:center}
+  .discover-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .discover-controls label{flex:1;min-width:130px;margin:0}
+  .status{min-height:24px;margin:14px 0 4px;color:var(--ink-2);font-size:.9rem}
+  .status.busy::before{content:"";display:inline-block;width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--save);border-radius:50%;margin-right:8px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){.status.busy::before{animation:none;border-top-color:var(--line);background:var(--save)}}
+  .result-list{display:grid;gap:8px;margin-top:12px}
+  .result{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:13px 14px}
+  .result .name{font-family:var(--serif);font-size:1.15rem;font-weight:600;line-height:1.15}
+  .result .meta{color:var(--ink-2);font-size:.84rem;margin-top:4px}.result .distance{font-family:var(--mono);font-size:.68rem;color:var(--save);margin-top:5px}
+  .evidence-list{display:grid;gap:8px;margin-top:12px}.evidence{border-left:3px solid var(--save);padding:9px 11px;background:var(--card);border-radius:0 8px 8px 0}
+  .evidence .label{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--save)}
+  .evidence .detail{margin-top:3px;font-size:.92rem}.source{display:inline-block;font-size:.76rem;margin-top:5px;color:var(--ink-2);overflow-wrap:anywhere}
+  .question-list{margin:10px 0 0;padding-left:20px;color:var(--ink-2);font-size:.9rem}.question-list li{margin:6px 0}
+  .connection{max-width:520px}.connection .row{margin-top:14px}.privacy-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .location-help{border-left:3px solid var(--leak);background:var(--leak-lite);padding:14px 16px;margin:14px 0;color:var(--ink-2)}
+  .location-help h2{font-family:var(--serif);font-size:1.25rem;line-height:1.15;color:var(--ink);margin:0 0 6px}
+  .location-help p{font-size:.9rem;margin:6px 0}.location-help strong{color:var(--ink)}
+  .location-steps{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin:12px 0}
+  .location-step{font-size:.86rem;line-height:1.45}.location-step .lab{font-family:var(--mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--leak);display:block;margin-bottom:3px}
+  .location-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .obs-source{display:block;font-size:.74rem;margin:4px 42px 0 118px;overflow-wrap:anywhere}
+  /* ---------- business list ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px;margin:12px 0}
+  .biz{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+  .biz .name{font-family:var(--serif);font-size:1.28rem;font-weight:600;line-height:1.1}
+  .biz .cat{color:var(--ink-2);font-size:.9rem;margin-top:2px}
+  .pill{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:.24rem .55rem;border-radius:999px;vertical-align:middle;margin-left:8px}
+  .pill.food{background:var(--leak-lite);color:var(--leak)} .pill.service{background:var(--save-lite);color:var(--save)}
+  .biz .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .empty{text-align:center;color:var(--ink-3);padding:48px 16px}
+  /* ---------- editor ---------- */
+  label.f{display:block;margin:14px 0 0}
+  label.f .lab{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);display:block;margin-bottom:5px}
+  input,textarea,select{width:100%;font-family:var(--sans);font-size:1rem;color:var(--ink);background:var(--card);
+    border:1px solid var(--line);border-radius:10px;padding:.62rem .7rem}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--save-lite);border-color:var(--save)}
+  textarea{min-height:60px;resize:vertical;line-height:1.4}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:560px){
+    .appbar{flex-wrap:wrap}
+    .biz{grid-template-columns:1fr}
+    .biz .acts{justify-content:flex-start}
+    .grid2{grid-template-columns:1fr}
+    .grid3{grid-template-columns:1fr 1fr}
+    .obs-row{grid-template-columns:84px minmax(0,1fr) auto}
+    .obs-source{margin-left:92px}
+    .search-tools{grid-template-columns:1fr}.search-tools .btn{width:100%}
+    .result{grid-template-columns:1fr}.result .btn{justify-self:start}
+    .location-steps{grid-template-columns:1fr}
+  }
+  @media(max-width:400px){.grid3{grid-template-columns:1fr}}
+  .obs-row{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:start;margin-top:8px}
+  .obs-row .btn{padding:.5rem .6rem}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--card)}
+  .seg button{border:0;background:transparent;padding:.55rem 1rem;font-weight:600;cursor:pointer;color:var(--ink-2);font-family:var(--sans);font-size:.92rem}
+  .seg button.on{background:var(--save);color:#fff}
+  .section-title{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 4px;border-top:1px solid var(--line);padding-top:18px}
+  .savebar{position:sticky;bottom:0;background:rgba(246,244,239,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);
+    padding:12px clamp(16px,5vw,28px);padding-bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:flex-end}
+  /* ---------- owner conversation brief ---------- */
+  .brief-wrap{max-width:880px;margin:0 auto;padding:clamp(20px,5vw,42px);padding-bottom:max(72px,env(safe-area-inset-bottom))}
+  .brief-hero{padding:8px 0 26px;border-bottom:1px solid var(--line)}
+  .brief-kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;color:var(--save);font-weight:700}
+  .brief-hero h2{font-family:var(--serif);font-size:clamp(2rem,5vw,3.3rem);line-height:1.03;margin:.5rem 0 0;font-weight:600;text-wrap:balance}
+  .brief-hero .lead{max-width:68ch}
+  .brief-route{display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:thin}
+  .brief-route button{white-space:nowrap;font-family:var(--mono);font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);border:0;border-bottom:2px solid var(--line);background:transparent;padding:.35rem .15rem;cursor:pointer}
+  .brief-route button:hover{color:var(--save);border-color:var(--save)}
+  .brief-route button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  .brief-section{padding:30px 0;border-bottom:1px solid var(--line);scroll-margin-top:92px}
+  .brief-section:last-child{border-bottom:0}
+  .brief-step{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--save);font-weight:700}
+  .brief-section h2{font-family:var(--serif);font-size:clamp(1.55rem,4vw,2.15rem);line-height:1.1;margin:.45rem 0 0;font-weight:600}
+  .brief-section h3{font-family:var(--serif);font-size:1.15rem;line-height:1.2;margin:0;font-weight:600}
+  .brief-copy{color:var(--ink-2);max-width:72ch;margin:.65rem 0 0}
+  .brief-say{border-left:4px solid var(--save);background:var(--save-lite);padding:18px 20px;margin:18px 0 0}
+  .brief-say.warm{border-left-color:var(--leak);background:var(--leak-lite)}
+  .brief-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.11em;text-transform:uppercase;color:var(--save);font-weight:700;display:block;margin-bottom:.45rem}
+  .brief-say.warm .brief-label{color:var(--leak)}
+  .brief-say p{font-family:var(--serif);font-size:1.15rem;line-height:1.48;margin:0}
+  .brief-list{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:0}
+  .brief-list li{padding:12px 0 12px 20px;border-top:1px solid var(--line);position:relative;color:var(--ink-2)}
+  .brief-list li::before{content:"";position:absolute;left:2px;top:1.32rem;width:6px;height:6px;border-radius:50%;background:var(--save)}
+  .brief-list strong{color:var(--ink)}
+  .brief-findings,.brief-questions,.brief-plan{margin-top:18px;border-top:1px solid var(--line)}
+  .brief-finding,.brief-question,.brief-plan-row{padding:16px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(150px,.65fr) minmax(0,1.7fr);gap:22px}
+  .brief-finding p,.brief-question p,.brief-plan-row p{margin:.35rem 0 0;color:var(--ink-2);font-size:.92rem}
+  .brief-confirm,.brief-listen{font-family:var(--mono);font-size:.67rem;line-height:1.45;color:var(--save);margin-top:.55rem}
+  .brief-table-wrap{overflow-x:auto;margin-top:18px;border-top:1px solid var(--line)}
+  .brief-table{width:100%;border-collapse:collapse;min-width:560px;font-variant-numeric:tabular-nums}
+  .brief-table th,.brief-table td{text-align:right;padding:11px 10px;border-bottom:1px solid var(--line);font-size:.86rem}
+  .brief-table th:first-child,.brief-table td:first-child{text-align:left;padding-left:0}
+  .brief-table th{font-family:var(--mono);font-size:.6rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .brief-table td:not(:first-child){font-weight:700;color:var(--save)}
+  .brief-proof{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:18px}
+  .brief-proof>div{border-top:3px solid var(--save);padding-top:10px}
+  .brief-proof p{font-size:.88rem;color:var(--ink-2);margin:.4rem 0 0}
+  .brief-details{margin-top:16px;border-top:1px solid var(--line)}
+  .brief-details details{border-bottom:1px solid var(--line);padding:12px 0}
+  .brief-details summary{cursor:pointer;font-weight:700;color:var(--ink)}
+  .brief-details summary:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  .brief-source-list{display:grid;gap:8px;margin:12px 0 4px}.brief-source-list a{overflow-wrap:anywhere;font-size:.86rem}
+  .brief-note{margin-top:16px;padding:12px 14px;border-left:3px solid var(--gold);background:#F4EEDC;color:var(--ink-2);font-size:.88rem}
+  @media(max-width:600px){
+    .brief-wrap{padding:18px 18px 78px}.brief-section{padding:26px 0}.brief-say{padding:15px 16px}
+    .brief-finding,.brief-question,.brief-plan-row{grid-template-columns:1fr;gap:5px}.brief-proof{grid-template-columns:1fr}
+    .brief-route{margin-right:-18px;padding-right:18px}.brief-hero h2{font-size:2.15rem}
+    .brief-appbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;flex-wrap:nowrap;gap:8px}
+    .brief-appbar .sp{display:none}.brief-appbar .btn{padding:.48rem .6rem}.brief-appbar h1{font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .brief-table-wrap{overflow:visible}.brief-table{min-width:0}.brief-table thead{display:none}
+    .brief-table tbody,.brief-table tr,.brief-table td{display:block;width:100%}.brief-table tr{padding:10px 0;border-bottom:1px solid var(--line)}
+    .brief-table td,.brief-table td:first-child{text-align:right;padding:4px 0;border:0;display:flex;justify-content:space-between;gap:14px}
+    .brief-table td:first-child{font-family:var(--serif);font-size:1.05rem;font-weight:700;color:var(--ink);padding-bottom:7px}
+    .brief-table td:nth-child(2)::before{content:"Per $1,000"}.brief-table td:nth-child(3)::before{content:"Per $5,000"}.brief-table td:nth-child(4)::before{content:"Per $10,000"}
+    .brief-table td:not(:first-child)::before{font-family:var(--mono);font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+  }
+  .prepared-briefs{padding:0 0 24px;margin-bottom:24px;border-bottom:1px solid var(--line)}
+  .prepared-briefs h2{font-size:1rem;margin:0 0 12px;letter-spacing:0}
+  .prepared-brief{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0}
+  .prepared-brief h3{font-family:var(--serif);font-size:1.3rem;margin:0;overflow-wrap:anywhere}
+  .prepared-brief p{font-size:.85rem;color:var(--ink-2);margin:5px 0 0}
+  .prepared-brief .btn{flex-shrink:0}
+  .systems-brief h1,.systems-brief h2{font-size:1.6rem;letter-spacing:0;overflow-wrap:anywhere}
+  .systems-brief .brief-hero h1{font-family:var(--serif);font-size:2.15rem;line-height:1.03;margin:.5rem 0 0;font-weight:600;text-wrap:balance}
+  .systems-brief .lead{font-size:1.05rem}
+  .systems-brief .brief-kicker,.systems-brief .brief-step,.systems-brief .brief-label{letter-spacing:0}
+  .systems-brief .brief-route{flex-wrap:wrap;overflow:visible;margin-right:0;padding-right:0}
+  .systems-brief .brief-route button{min-height:44px;font-size:.72rem;letter-spacing:0}
+  .systems-brief .brief-note{background:var(--save-lite);border-color:var(--save)}
+  @media(max-width:420px){.prepared-brief{align-items:flex-start;flex-direction:column}}
+  /* ---------- present (deck) — same design as the standalone package ---------- */
+  #present{position:fixed;inset:0;background:var(--paper);z-index:50;display:none}
+  #present.on{display:block}
+  #present .deck{position:relative;height:100%;width:100%}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(26px,6vw,84px);
+    padding-top:max(56px,env(safe-area-inset-top));opacity:0;transform:translateY(14px);pointer-events:none;transition:opacity .45s,transform .45s;max-width:1160px;margin:0 auto}
+  .slide.active{opacity:1;transform:none;pointer-events:auto}
+  @media(prefers-reduced-motion:reduce){.slide{transition:none}}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--save);font-weight:600;margin:0 0 .9rem;display:flex;align-items:center;gap:.6rem}
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--save)} .eyebrow.warm{color:var(--leak)} .eyebrow.warm::before{background:var(--leak)}
+  .slide h2,.slide h1{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;text-wrap:balance;margin:0}
+  .slide h1{font-size:clamp(2rem,5.4vw,3.7rem);line-height:1.04}.slide h2{font-size:clamp(1.6rem,3.9vw,2.7rem);line-height:1.1}
+  .lead{font-size:clamp(1rem,1.7vw,1.2rem);color:var(--ink-2);max-width:62ch;margin:.9rem 0 0}
+  .fine{font-size:.8rem;color:var(--ink-3)} .slide strong{color:var(--ink);font-weight:600}.save-ink{color:var(--save);font-weight:600}
+  .facts{list-style:none;margin:1rem 0 0;padding:0;display:grid;gap:.45rem;max-width:66ch}
+  .facts li{display:grid;grid-template-columns:auto 1fr;gap:.8rem;padding:.58rem .8rem;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  .facts .tg{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding-top:.25rem}
+  .fact-source{display:block;font-family:var(--mono);font-size:.56rem;line-height:1.35;color:var(--ink-3);margin-top:.32rem}
+  .fact-source a{color:var(--ink-3);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:2px}
+  .pmatrix{display:grid;margin-top:1.2rem;max-width:980px;border-top:1px solid var(--line)}
+  .pmatrix-row{display:grid;grid-template-columns:minmax(108px,.7fr) minmax(210px,1.5fr) minmax(170px,1fr);gap:14px;padding:.68rem 0;border-bottom:1px solid var(--line);align-items:start}
+  .pmatrix-row.head{font-family:var(--mono);font-size:.58rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);padding:.48rem 0}
+  .pmatrix-row .channel{font-family:var(--serif);font-size:1.02rem;font-weight:600;line-height:1.15}.pmatrix-row .role,.pmatrix-row .decision{font-size:.82rem;line-height:1.42;color:var(--ink-2)}
+  .pmatrix-row .decision strong{font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;color:var(--save);display:block;margin-bottom:.14rem}
+  .pmath{display:grid;margin-top:1.15rem;max-width:900px;border-top:1px solid var(--line)}
+  .pmath-row{display:grid;grid-template-columns:minmax(145px,.75fr) minmax(0,1.8fr);gap:16px;padding:.68rem 0;border-bottom:1px solid var(--line)}
+  .pmath-row .name{font-family:var(--serif);font-weight:600}.pmath-row .formula{font-family:var(--mono);font-size:.7rem;line-height:1.5;color:var(--ink-2)}
+  .paudiences{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin-top:1rem;max-width:980px;border-top:1px solid var(--line)}
+  .paudience{padding:.7rem 0;border-bottom:1px solid var(--line)}.paudience .who{font-family:var(--serif);font-size:1rem;font-weight:600}
+  .paudience .next{font-size:.82rem;color:var(--ink-2);line-height:1.4;margin-top:.18rem}.paudience .metric{font-family:var(--mono);font-size:.59rem;color:var(--save);margin-top:.28rem}
+  .proadmap{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:1.25rem;max-width:980px}
+  .proad{border-top:3px solid var(--save);padding:.7rem .15rem 0}.proad .when{font-family:var(--mono);font-size:.59rem;letter-spacing:.08em;text-transform:uppercase;color:var(--save)}
+  .proad .title{font-family:var(--serif);font-size:1.05rem;font-weight:600;margin-top:.28rem}.proad .detail{font-size:.8rem;color:var(--ink-2);line-height:1.42;margin-top:.28rem}
+  .ptwo{display:grid;grid-template-columns:1.25fr .75fr;gap:30px;margin-top:1.1rem;max-width:980px}.ptwo h3{font-family:var(--serif);font-size:1.05rem;margin:0 0 .45rem}
+  .pplain{list-style:none;margin:0;padding:0;display:grid;gap:.42rem}.pplain li{font-size:.82rem;line-height:1.4;color:var(--ink-2);padding-left:1rem;position:relative}.pplain li::before{content:"";position:absolute;left:0;top:.58rem;width:5px;height:5px;border-radius:50%;background:var(--save)}
+  .source-list{display:grid;gap:4px;margin-top:10px}.source-list a{font-size:.76rem;overflow-wrap:anywhere}
+  .pstats{display:flex;flex-wrap:wrap;gap:clamp(14px,3vw,40px);margin-top:1.4rem}
+  .pstat .n{font-size:clamp(1.9rem,4.6vw,3.2rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .pstat .n.leak{color:var(--leak)}.pstat .n.save{color:var(--save)}
+  .pstat .k{font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin-top:.45rem}
+  .pbars{margin-top:1.4rem;max-width:640px;display:grid;gap:.9rem}
+  .pbar{display:grid;grid-template-columns:130px 1fr auto;align-items:center;gap:12px}
+  .pbar .lab{font-family:var(--mono);font-size:.64rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2)}
+  .ptrack{height:24px;background:var(--line-2);border-radius:7px;overflow:hidden}
+  .pfill{height:100%;border-radius:7px;width:0;transition:width .8s cubic-bezier(.2,.7,.2,1)}.pfill.leak{background:var(--leak)}.pfill.save{background:var(--save)}
+  .pbar .val{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;min-width:60px}.pbar .val.leak{color:var(--leak)}.pbar .val.save{color:var(--save)}
+  .pflow{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem}
+  .pstep{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.7rem .9rem;box-shadow:var(--shadow);min-width:104px;flex:1}
+  .pstep .s{font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;color:var(--save);text-transform:uppercase}.pstep b{display:block;margin-top:.2rem}
+  .parrow{display:flex;align-items:center;color:var(--ink-3)}
+  .pchips{margin-top:1.2rem;display:flex;flex-wrap:wrap;gap:.5rem;max-width:70ch}
+  .pchip{font-family:var(--mono);font-size:.72rem;padding:.32rem .62rem;border-radius:999px;background:var(--leak-lite);color:var(--leak)}.pchip.own{background:var(--save-lite);color:var(--save)}
+  .sols{margin-top:1.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;max-width:920px}
+  .sol{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:15px 16px 14px;display:flex;flex-direction:column;gap:8px}
+  .sol-h{font-family:var(--serif);font-size:1.18rem;font-weight:600;line-height:1.12}
+  .sol-f{color:var(--ink-2);font-size:.9rem;flex:1;line-height:1.42}
+  .sol-b{font-family:var(--mono);font-size:.72rem;letter-spacing:.02em;color:var(--save);background:var(--save-lite);border-radius:999px;padding:.34rem .7rem;align-self:flex-start;font-weight:600}
+  .phead{font-size:clamp(2.2rem,6vw,3.8rem);font-weight:800;color:var(--save);line-height:.98;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .pcta{display:inline-flex;align-items:center;gap:.5rem;background:var(--save);color:#fff;font-family:var(--mono);font-size:.9rem;padding:.85rem 1.3rem;border-radius:12px;margin-top:1.4rem}
+  .asklist{list-style:none;padding:0;margin:1.2rem 0 0;display:grid;gap:.5rem;max-width:60ch}.asklist li{display:grid;grid-template-columns:auto 1fr;gap:.6rem}.asklist .d{color:var(--save);font-weight:700}
+  .pmodeled{position:fixed;left:clamp(16px,5vw,48px);bottom:14px;font-family:var(--mono);font-size:.58rem;color:var(--ink-3);max-width:54ch;z-index:5}
+  .pnav{position:fixed;right:clamp(16px,5vw,48px);bottom:12px;display:flex;align-items:center;gap:12px;z-index:6}
+  .pnav .count{font-family:var(--mono);font-size:.7rem;color:var(--ink-3)}
+  .pnav button,.pexit{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font-size:1rem}
+  .pexit{position:fixed;left:clamp(16px,5vw,48px);top:max(14px,env(safe-area-inset-top));z-index:6}
+  @media(max-width:600px){
+    .slide{justify-content:flex-start;overflow-y:auto;padding:68px 20px 132px}
+    .slide h1{font-size:2.1rem}.slide h2{font-size:1.65rem}
+    .facts{gap:.45rem;margin-top:1rem}.facts li{padding:.6rem .7rem;gap:.55rem}
+    .pbar{grid-template-columns:94px minmax(0,1fr) auto;gap:8px}
+    .pstep{min-width:94px}
+    .pmodeled{display:none}
+    .pnav{right:20px;bottom:max(12px,env(safe-area-inset-bottom));background:var(--paper);border-radius:9px;box-shadow:0 0 0 8px var(--paper)}
+    .pmatrix-row{grid-template-columns:100px minmax(0,1fr);gap:8px 12px}.pmatrix-row.head{display:none}.pmatrix-row .decision{grid-column:2}.pmatrix-row .decision strong{display:inline;margin-right:.35rem}
+    .pmath-row{grid-template-columns:1fr;gap:3px}.paudiences{grid-template-columns:1fr}.proadmap{grid-template-columns:1fr 1fr}.ptwo{grid-template-columns:1fr;gap:18px}
+  }
+  @media(max-width:390px){.proadmap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="present" aria-hidden="true"><button class="pexit" onclick="closePresent()" aria-label="Close presentation">✕</button>
+  <div class="deck" id="deck"></div>
+  <div class="pmodeled" id="pmodeled"></div>
+  <div class="pnav"><span class="count" id="pcount"></span><button onclick="pgo(pcur-1)" aria-label="Previous slide">‹</button><button onclick="pgo(pcur+1)" aria-label="Next slide">›</button></div>
+</div>
+
+<script src="./discovery.js"></script>
+<script src="./meeting-icons.js"></script>
+<script src="./meetings.js"></script>
+<script src="./meeting-ui.js"></script>
+<script>
+/* ============================================================================
+   Understudy Audit — saved businesses live on this phone. Discovery is an
+   explicit online action: approximate location and the selected public business
+   are sent to the configured research service only after consent.
+   ============================================================================ */
+const KEY="understudy_audit_v1";
+const Discovery=globalThis.UnderstudyDiscovery;
+const money=n=>"$"+Math.round(n).toLocaleString("en-US");
+const esc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+const safeFact=s=>esc(s).replace(/&lt;(\/?)(b|em|strong)&gt;/gi,"<$1$2>");
+const uid=()=>"b"+Math.random().toString(36).slice(2,9);
+const bizName=b=>esc(b.shortName||b.name||"the business");
+function loadAll(){
+  try{
+    const stored=JSON.parse(localStorage.getItem(KEY));
+    if(!Array.isArray(stored))return null;
+    return stored;
+  }catch{return null}
+}
+function saveAll(list){try{localStorage.setItem(KEY,JSON.stringify(list))}catch(e){alert("Could not save on this device.")}}
+function getBiz(id){return (loadAll()||[]).find(b=>b.id===id)}
+
+/* ---------- seed on first run ----------
+   Everything below describes ONE fictional business, "Juniper Street Bakery (demo)".
+   Its facts, prices and links are invented so the app's features can be shown without
+   naming or researching a real company. Links use the reserved .example domain. */
+const DEMO_SITE="https://juniper-street-bakery.example";
+const DEMO_SOURCE=(path,label)=>({label:`${label} (fictional demo source)`,url:DEMO_SITE+path});
+const DEMO_FACTS=[
+ {researchKey:"demo:owned-hub",tag:"Owned hub",text:"The bakery's own website already handles the menu, pickup preorders, catering requests, a paid Bread Club, and email signup.",sources:[DEMO_SOURCE("/","Bakery website")]},
+ {researchKey:"demo:order-paths",tag:"Order paths",text:"The website sends pickup to <b>Clover</b> and delivery to <b>DoorDash</b>; the bakery also has an Uber Eats marketplace listing.",sources:[DEMO_SOURCE("/order","Bakery order page")]},
+ {researchKey:"demo:membership",tag:"Bread Club",text:"The bakery offers a <b>$30 monthly</b> Bread Club with a weekly loaf, member-only bakes, and 10% off in-store orders.",sources:[DEMO_SOURCE("/bread-club","Bread Club page")]},
+ {researchKey:"demo:catering",tag:"Beyond the counter",text:"Office catering and small wholesale orders arrive through a request form; there is no public quote or order-status step.",sources:[DEMO_SOURCE("/catering","Catering page")]},
+ {researchKey:"demo:consent",tag:"Permission",text:"The privacy policy says opted-in customer information may be used for promotions and updates, which is a legitimate base for an owned audience.",sources:[DEMO_SOURCE("/privacy","Privacy policy")]},
+ {researchKey:"demo:public-drift",tag:"Public drift",text:"The website and an older map listing show different weekend hours, and a retired preorder page is still reachable. That creates avoidable conversion and trust risk.",sources:[DEMO_SOURCE("/","Bakery website"),DEMO_SOURCE("/old-preorder","Retired preorder page")]}
+];
+const DEMO_DEEP_RESEARCH={
+ surfaces:["bakery website","Clover pickup + POS","DoorDash marketplace","Uber Eats marketplace","Bread Club","catering + wholesale"],
+ systemMap:[
+  {channel:"Bakery website",role:"Brand, menu, email signup, preorders, catering requests, membership, and links to local ordering.",decision:"Keep as the canonical front door."},
+  {channel:"Clover",role:"Local pickup and the in-store transaction spine. Exact plan, rate, customer fields, and rewards status are private.",decision:"Keep; confirm enabled features and consent fields."},
+  {channel:"DoorDash + Uber Eats",role:"Delivery marketplaces with discovery value.",decision:"Keep for discovery; never treat marketplace data as the bakery's marketing list."},
+  {channel:"Bread Club",role:"A recurring membership with a weekly loaf, member bakes, and an in-store discount.",decision:"Connect member status, pickup, renewal, and engagement."},
+  {channel:"Catering + wholesale",role:"Higher-value orders that arrive by form and are followed up by hand.",decision:"Track every inquiry, quote, order, follow-up, and reorder."},
+  {channel:"Legacy public paths",role:"A retired preorder page and conflicting hours on an older listing.",decision:"Redirect, correct, and monitor."}
+ ],
+ consolidationFlow:["Canonical front door","Consent + customer identity","Customer hub","Segmented follow-up","Owner dashboard"],
+ audiences:[
+  {who:"Counter regulars",next:"Invite at checkout or on the receipt to join the bakery's own list and choose pickup, new-bake, or event interests.",metric:"direct reorder rate + visits per customer"},
+  {who:"Marketplace-discovered guests",next:"Use a bag insert or in-store QR to invite a new, explicit opt-in on the bakery's site. Do not reuse marketplace customer data.",metric:"QR opt-ins + later owned orders"},
+  {who:"Bread Club members",next:"Unify signup, weekly pickup, member bakes, discount use, renewal, and cancellation signals.",metric:"active members + renewal + contribution"},
+  {who:"Catering and wholesale clients",next:"Track event date, quote, deposit, delivery, thank-you, and the next likely order.",metric:"response time + close rate + repeat orders"}
+ ],
+ economics:[
+  {name:"Owned pickup",formula:"shifted marketplace sales x (actual marketplace fee - actual direct processing cost)"},
+  {name:"Owned delivery",formula:"owned-pickup difference - direct delivery fulfillment - added operating cost"},
+  {name:"Retention",formula:"reachable opted-in customers x incremental orders x average ticket x contribution margin"},
+  {name:"Catering follow-up",formula:"recovered orders x collected invoice x contribution margin"},
+  {name:"Admin time",formula:"reconciliation and follow-up hours removed x loaded hourly value"},
+  {name:"Membership",formula:"monthly price x active members = gross recurring revenue before product, packing, discount, and service costs"}
+ ],
+ roadmap:[
+  {when:"Days 1-7",title:"Establish the truth",detail:"Correct public hours and contact data, map every account, collect one ordinary month of statements, and decide the canonical links."},
+  {when:"Weeks 2-4",title:"Build the customer hub",detail:"Create one consent-aware record, deduplicate owned contacts, connect exports or APIs, and preserve opt-outs."},
+  {when:"Days 30-60",title:"Launch focused journeys",detail:"Welcome, direct reorder, member, and catering follow-up workflows, each with a stop rule."},
+  {when:"Days 60-90",title:"Measure and improve",detail:"Review channel margin, audience growth, repeat behavior, member health, catering conversion, and staff time."}
+ ],
+ metrics:["Net payout and contribution by channel","Owned-order share and repeat rate","Reachable opted-in audience and unsubscribes","Bread Club active members and renewal","Catering response, close rate, and repeat orders","Monthly reconciliation and follow-up hours"],
+ ownerInputs:["One ordinary month of marketplace sales, fees, promotions, refunds, and payouts.","One card-processing statement plus the current POS plan, software fees, and enabled rewards features.","Website order exports, email subscriber count and consent fields, Bread Club active members, renewals, and cancellations.","Catering inquiries, quotes, collected orders, average invoice, response time, and repeat orders.","Website analytics for current and legacy URLs, plus the staff time spent reconciling channels and following up."],
+ solutionCards:[
+  {title:"Repair the front door",fix:"Make the bakery website canonical, correct hours everywhere, and redirect the retired preorder page to the right order, catering, or membership page.",benefit:"fewer lost or confused buyers"},
+  {title:"Build one customer hub",fix:"Connect owned POS, website, membership, and catering records into one consent-aware customer view without replacing useful customer-facing tools.",benefit:"one owner view + one permission record"},
+  {title:"Automate the next right message",fix:"Run separate welcome, reorder, member, and catering journeys using only owned, opted-in contact data.",benefit:"more direct repeats, less manual follow-up"}
+ ],
+ ownerBrief:{
+  opening:"Thanks for letting me take a closer look. You already have useful pieces in place: your website, the POS, delivery marketplaces, the Bread Club, and catering. I am not here to replace what is working. I want to understand where the customer relationship, fees, and staff follow-up are getting split, then show you the smallest useful way to connect them.",
+  meetingGoal:"Confirm how the business works today, identify one measurable leak, and earn permission to review one ordinary month of records. Do not try to sell the full build in the first conversation.",
+  findings:[
+   {title:"The website is already an owned front door",say:"Your website can already guide customers to pickup, delivery, membership, catering, and email signup.",confirm:"Ask: Is this the main address you want every customer to trust?"},
+   {title:"Useful systems are creating separate customer paths",say:"The POS, the delivery marketplaces, the Bread Club, and catering each do a real job. The likely issue is that the owner cannot see the full customer relationship in one place.",confirm:"Ask: Do any of these systems already share customer history or reporting?"},
+   {title:"There is an audience to grow responsibly",say:"Your site already invites customers to opt in, and your privacy policy supports promotional communication after that permission is given.",confirm:"Ask: Where do opted-in email or text contacts live today, and who sends to them?"},
+   {title:"Public hours need one source of truth",say:"I found different weekend hours across your website and an older listing, plus a retired preorder page that is still reachable.",confirm:"Ask: Which hours and ordering links should be treated as official?"}
+  ],
+  questions:[
+   {ask:"Which channels bring the most orders today, and which ones bring the best repeat customers?",why:"Separates discovery value from repeat-order value.",listen:"Listen for: marketplace volume, pickup habits, average ticket, and regular-customer behavior."},
+   {ask:"When the same person buys at the counter, joins the Bread Club, or orders catering, can you recognize that it is the same customer?",why:"Shows whether a connected customer view already exists.",listen:"Listen for: duplicate records, spreadsheets, staff memory, or separate logins."},
+   {ask:"Where are email and text permissions recorded, and how do you handle unsubscribes?",why:"Protects the business and determines who can be contacted.",listen:"Listen for: POS rewards, website forms, email tools, paper lists, or missing consent records."},
+   {ask:"What do the marketplaces actually deduct after commission, promotions, refunds, and adjustments?",why:"Replaces published pricing examples with the business's real channel economics.",listen:"Listen for: negotiated rates, sponsored promotions, refunds, and payout confusion."},
+   {ask:"What POS plan and processing rate are you on, and are rewards or promotions turned on?",why:"Prevents recommending features the business may already be paying for.",listen:"Listen for: online versus in-store rates, software fees, exports, rewards, and customer fields."},
+   {ask:"How does a catering inquiry move from the first message to a quote, deposit, delivery, and follow-up?",why:"Finds lost leads and repeated staff work in a higher-value channel.",listen:"Listen for: inbox handoffs, response time, quotes, deposits, reminders, and repeat orders."},
+   {ask:"About how many staff hours go into reconciling sales and following up with customers each month?",why:"Captures costs that transaction fees alone miss.",listen:"Listen for: payout matching, copying data, customer replies, and manual reminders."}
+  ],
+  recommendation:"Keep each sales channel that is earning its place. Make your website the trusted front door, connect only customer records you own behind it, and give the owner one simple view of consent, customer history, channel economics, and the next follow-up.",
+  close:"If you are comfortable, let us review one ordinary month of marketplace, POS, website, membership, and catering records. I will replace every public estimate with your real numbers and return with a phased keep, connect, replace, or do-nothing plan. You can start with one useful fix instead of committing to a full rebuild.",
+  guardrails:[
+   "Do not say the delivery marketplaces should be removed. They may be valuable discovery channels.",
+   "Do not call the modeled fee difference savings until actual contracts and fulfillment costs are reviewed.",
+   "Do not import marketplace customer information for marketing. A customer joins the owned audience only through a fresh opt-in.",
+   "Do not recommend a new checkout, loyalty tool, or database until current POS and website capabilities are confirmed."
+  ]
+ },
+ research:{provider:"Fictional demo research (no real business was reviewed)",researchedAt:"2026-08-24T12:00:00-04:00",website:DEMO_SITE+"/",questions:[
+   "What are the actual marketplace and card-processing costs by channel?",
+   "Which POS customer, rewards, and marketing-consent features are enabled today?",
+   "How many opted-in email subscribers and active Bread Club members can the bakery reach now?",
+   "How are catering leads, quotes, deposits, fulfillment, and repeat orders tracked?",
+   "How much staff time goes to reconciliation and manual follow-up each month?"
+  ],sources:[
+   DEMO_SOURCE("/","Bakery website"),
+   DEMO_SOURCE("/bread-club","Bread Club page"),
+   DEMO_SOURCE("/catering","Catering page"),
+   DEMO_SOURCE("/privacy","Privacy policy"),
+   {label:"DoorDash merchant pricing",url:"https://merchants.doordash.com/en-us/marketplace/how-it-works-for-restaurants"},
+   {label:"Uber Eats merchant pricing",url:"https://merchants.ubereats.com/us/en/pricing/"},
+   {label:"Clover online ordering",url:"https://www.clover.com/pos-systems/online-ordering"}
+  ]}
+};
+const SEEDS=[
+ {id:"juniper-demo",type:"food",name:"Juniper Street Bakery (demo)",shortName:"Juniper Street",category:"Fictional neighborhood bakery and cafe with catering and a bread membership",date:"August 2026",
+  observed:DEMO_FACTS,...DEMO_DEEP_RESEARCH,
+  commissionLow:.15,commissionMid:.25,commissionHigh:.30,directRate:.035,
+  ask:"A free 15-minute systems look"}
+];
+if(loadAll()===null) saveAll(SEEDS);
+
+// Public, read-only conversation briefs never replace or append to device-owned audits.
+const PUBLIC_BRIEFS=[{
+ id:"juniper-cakes",name:"Juniper Street Bakery (demo)",category:"Fictional bakery / custom cake orders",
+ ownerBrief:{kind:"systems",title:"Make it easier for customers to order a custom cake.",
+  checked:"September 9, 2026 (fictional demo)",researchedAt:"2026-09-09",
+  status:"Demo public-site review / fictional business",
+  opening:"I followed the custom-cake link on your website and saw that online scheduling was unavailable. Was that intentional? If not, I can help you check the path before we talk about any bigger changes.",
+  boundary:"This is a dated public-site observation, not an account diagnosis. I have not tested delivery of the request form or established lost orders, revenue, or savings. Recheck the order link together before deciding what to change.",
+  sections:[
+   {label:"What I noticed",title:"A customer can reach a stopping point when trying to order.",
+    rows:[
+     {title:"Website to calendar",text:"The website promotes online custom-cake ordering and links to a scheduling calendar. At inspection, that calendar said online scheduling was not currently available and directed customers to contact the business.",source:"scheduler"},
+     {title:"There is another way to reach you",text:"The contact page includes a request form and a phone number. The form asks for the date, servings, flavors, and pickup or delivery. I inspected it without submitting anything; we still need to confirm where requests arrive.",source:"contact"},
+     {title:"What that means",text:"Someone who expected to order online must switch to a call or request form. That may be your intended process. We need your confirmation before treating it as a problem to repair."}
+    ]},
+   {label:"Questions",title:"How do you want customers to reach you?",
+    items:[
+     "Are you taking new custom orders, and is online scheduling intentionally paused?",
+     "Should customers book a pickup slot immediately, or should you approve the design, date, and quantity first?",
+     "Which website and calendar account do you actively use and control? Is the calendar linked on the site still the right one?",
+     "Where do order requests land? Can we trace one recent request from arrival through your reply?",
+     "What are your lead times, daily capacity, deposit rules, and delivery area?",
+     "In a typical week, how many requests need a reply, and how much time goes into clarifying or following up?"
+    ]},
+   {label:"First fix",title:"Start with the tools you already have.",
+    rows:[
+     {title:"Inspect together",text:"With your permission, confirm the linked calendar account, slot visibility, and scheduling link. Then review hours, lead times, and capacity limits as needed. These are checks, not a diagnosis of why the calendar was unavailable."},
+     {title:"Direct ordering, if wanted",text:"Connect the agreed products to the correct order options. You confirm prices, lead times, and capacity. We do not open slots by overriding your business rules."},
+     {title:"Request first, if preferred",text:"Keep scheduling paused and make the buttons clearly request a quote or approval. A pending request must never be called a confirmed order. Keep a clear phone option."},
+     {title:"Prove the handoff",text:"Check the agreed path on phone and desktop. With your approval, send one clearly labeled test and confirm it reaches your chosen inbox or calendar once. A success message alone is not proof you received it."}
+    ],note:"If a setting or corrected link solves it, stop there. A new website or custom platform is not automatically necessary."},
+   {label:"Optional assistant",title:"Less back-and-forth, with you making the decisions.",
+    intro:"Only if the diagnostic confirms a real inquiry workload: start with one intake channel and one review queue.",
+    items:[
+     "Summarize the requested date, servings, design, and missing details in one place.",
+     "Draft a reply using your approved menu and policies. Flag exceptions instead of inventing a price or availability.",
+     "Show unanswered requests and a suggested next action. You review and approve every customer message.",
+     "Draft an agreed follow-up only while the request is open; stop after a reply, order, opt-out, or closure."
+    ],note:"This would be new, scoped work. No automatic messages, quotes, discounts, orders, charges, or cancellations."},
+   {label:"Measure value",title:"Use your records, not a made-up savings number.",
+    rows:[
+     {title:"Customer path",text:"Compare order or request completions before and after, where tracking is available and appropriate. Separate pending requests from confirmed orders."},
+     {title:"Owner workload",text:"Measure time to first personal reply, unanswered requests, and minutes of administration per request over comparable periods."},
+     {title:"Financial value",text:"Time saved is not automatically cash saved. Any money estimate needs actual records, capacity, delivery costs, and ongoing software or support costs. No dollar savings or conversion uplift is established by this review."}
+    ]},
+   {label:"Diagnostic",title:"Know the scope before paying for a build.",
+    rows:[
+     {title:"$150 diagnostic",text:"We review the ordering and inquiry flow together, identify the cause where we can verify it, and leave with a written keep, fix, or no-change plan. The diagnostic is credited toward agreed implementation work."},
+     {title:"Implementation only after scope",text:"You receive a separate proposal for the smallest useful repair or system. If you proceed: 50% to begin and 50% when complete. Any platform costs or optional monthly support are stated separately and approved by you."}
+    ],note:"The public finding is yours to use whether or not you hire me. Would you like to walk through how requests arrive today and decide whether a diagnostic would be useful?"}
+  ],
+  sources:[
+   {id:"website",...DEMO_SOURCE("/","Bakery website")},
+   {id:"scheduler",...DEMO_SOURCE("/cake-calendar","Linked cake-order calendar")},
+   {id:"contact",...DEMO_SOURCE("/contact","Request and contact page")}
+  ]
+ }
+}];
+
+const discoverState={location:null,places:[],selectedIndex:-1,research:null,query:"",radiusMiles:1,hasSearched:false,busy:"",error:"",message:"",locationIssue:""};
+
+/* ============================ ROUTER ============================ */
+function router(){
+  const h=location.hash.replace(/^#\/?/,"");
+  const [view,id]=h.split("/");
+  if(["diagnostics","meeting","summary"].includes(view))return globalThis.UnderstudyMeetingUI.route(view,id,key=>PUBLIC_BRIEFS.find(b=>b.id===key)||getBiz(key));
+  if(globalThis.UnderstudyMeetingUI&&!globalThis.UnderstudyMeetingUI.leave())return;
+  if(view==="edit") return renderEditor(id);
+  if(view==="brief") return renderOwnerBrief(id);
+  if(view==="present") return present(id);
+  if(view==="discover") return renderDiscover();
+  if(view==="settings") return renderDiscoverySettings();
+  return renderHome();
+}
+addEventListener("hashchange",router);
+
+/* ============================ HOME ============================ */
+function renderHome(){
+  discoverState.location=null;
+  const list=loadAll()||[];
+  const cards=list.map(b=>`
+    <div class="card biz">
+      <div>
+        <div class="name">${esc(b.name)}<span class="pill ${b.type}">${b.type==="food"?"Cafe/Retail":"Service"}</span></div>
+        <div class="cat">${esc(b.category)}</div>
+      </div>
+      <div class="acts">
+        <a class="btn" href="#/meeting/${encodeURIComponent(b.id)}">Meeting</a>
+        <button class="btn primary" onclick="location.hash='#/present/${b.id}'">Present</button>
+        ${b.ownerBrief?`<button class="btn" onclick="location.hash='#/brief/${b.id}'">Owner brief</button>`:""}
+        <button class="btn" onclick="location.hash='#/edit/${b.id}'">Edit</button>
+        <button class="btn ghost" title="Duplicate" onclick="dup('${b.id}')">⧉</button>
+        <button class="btn ghost danger" title="Delete" onclick="del('${b.id}')">🗑</button>
+      </div>
+    </div>`).join("");
+  document.getElementById("app").innerHTML=`
+    <div class="appbar"><div><div class="brand">Understudy</div><h1>Audit</h1></div><div class="sp"></div>
+      <button class="btn primary" onclick="location.hash='#/discover'">⌖ Nearby</button>
+      <button class="btn" onclick="newBiz('service')">+ Service</button>
+      <button class="btn" onclick="newBiz('food')">+ Cafe/Retail</button>
+    </div>
+    <div class="wrap">
+      <div class="row" style="justify-content:space-between;margin-bottom:24px"><h2 style="font-size:1.15rem;margin:0">Business reviews</h2><a class="btn primary" href="#/diagnostics">Diagnostics</a></div>
+      <section class="prepared-briefs" aria-labelledby="prepared-title"><h2 id="prepared-title">Owner conversations</h2>
+        ${PUBLIC_BRIEFS.map(b=>`<article class="prepared-brief"><div><h3>${esc(b.name)}</h3><p>${esc(b.category)}</p><p>Public-site review / ${esc(b.ownerBrief.checked)}</p></div><div class="row"><a class="btn" href="#/brief/${esc(b.id)}">Open brief</a><a class="btn primary" href="#/meeting/${encodeURIComponent(b.id)}">Meeting</a></div></article>`).join("")}
+      </section>
+      ${list.length?cards:`<div class="empty">No businesses yet.<br>Add one before you walk in.</div>`}
+      <div class="card" style="margin-top:22px">
+        <div class="muted">Saved audits stay on this device and remain available offline. Nearby research goes online only
+        after you approve it; numbers stay honest models until the owner confirms their statements and agreements.</div>
+      </div>
+    </div>`;
+  document.getElementById("present").classList.remove("on");
+}
+function newBiz(type){
+  const list=loadAll()||[]; const id=uid();
+  const base={id,type,name:"New business",category:"",date:"",observed:[{tag:"",text:""}],ask:"A free 15-minute look"};
+  const biz=type==="food"
+    ? {...base,commissionLow:.15,commissionMid:.25,commissionHigh:.30,directRate:.035,surfaces:[]}
+    : {...base,onlineVolume:0,onlineTxns:0,currentRate:.049,currentFixed:.30,stripeRate:.029,stripeFixed:.30,
+       saasReducibleMo:0,servicesMo:0,noShowRate:.05,avgTicket:0,noShowRecoverPct:.70,adminHoursMo:0,hourlyValue:50,buildFee:3500};
+  list.push(biz); saveAll(list); location.hash="#/edit/"+id;
+}
+function dup(id){const list=loadAll()||[];const b=list.find(x=>x.id===id);if(!b)return;const c=JSON.parse(JSON.stringify(b));c.id=uid();c.name=b.name+" (copy)";list.push(c);saveAll(list);router();}
+function del(id){if(!confirm("Delete this business?"))return;saveAll((loadAll()||[]).filter(b=>b.id!==id));router();}
+
+/* ============================ DISCOVER ============================ */
+function discoveryConnectionForm(showService=true){
+  const c=Discovery.loadConfig();
+  return `<div class="card connection">
+    <div class="section-title" style="border:0;padding-top:0;margin-top:0">Discovery connection</div>
+    ${showService?`<label class="f"><span class="lab">Research service</span><input id="discovery-url" type="url" value="${esc(c.serviceUrl)}" placeholder="https://research.example.workers.dev"></label>`:""}
+    <label class="f"><span class="lab">Access code</span><input id="discovery-token" type="password" autocomplete="off" value="${esc(c.accessToken)}"></label>
+    <div class="row" style="margin-top:14px"><button class="btn primary" onclick="saveDiscoveryConnection(${showService})">Save connection</button></div>
+  </div>`;
+}
+function discoveryConsent(){
+  document.getElementById("app").innerHTML=`<div class="appbar"><button class="btn ghost" onclick="location.hash='#/'">‹ Audits</button><div class="sp"></div><div class="brand">Nearby</div></div>
+    <div class="wrap"><div class="card connection">
+      <div class="section-title" style="border:0;padding-top:0;margin-top:0">Nearby research uses the internet</div>
+      <h2 style="font-family:var(--serif);margin:.35rem 0 .7rem">Use your location for this search?</h2>
+      <p class="muted">When you start a search, your phone will ask for location permission. The app rounds your coordinates before sending them to the Understudy research service and Geoapify. The service receives the selected public listing and website for research; it does not receive your saved audit list.</p>
+      <p class="muted">Your location is kept only in memory for this screen. Saved research stays on this device.</p>
+      <div class="privacy-actions"><button class="btn primary" onclick="approveDiscoveryConsent()">Continue</button><button class="btn" onclick="location.hash='#/'">Cancel</button></div>
+    </div></div>`;
+  document.getElementById("present").classList.remove("on");
+}
+function approveDiscoveryConsent(){Discovery.grantConsent();renderDiscover();}
+function saveDiscoveryConnection(showService){
+  try{
+    const current=Discovery.loadConfig();
+    const url=showService?document.getElementById("discovery-url").value:current.serviceUrl;
+    const token=document.getElementById("discovery-token").value;
+    Discovery.saveConfig({serviceUrl:url,accessToken:token});
+    discoverState.error="";discoverState.message="Connection saved on this device.";
+    if(location.hash.startsWith("#/settings"))renderDiscoverySettings();else renderDiscover();
+  }catch(error){discoverState.error=error.message;if(location.hash.startsWith("#/settings"))renderDiscoverySettings();else renderDiscover();}
+}
+function discoveryStatus(){
+  if(discoverState.locationIssue==="denied")return locationPermissionHelp();
+  if(discoverState.error)return `<div class="notice error" role="alert">${esc(discoverState.error)}</div>`;
+  if(discoverState.busy)return `<div class="status busy" aria-live="polite">${esc(discoverState.busy)}</div>`;
+  if(discoverState.message)return `<div class="status" aria-live="polite">${esc(discoverState.message)}</div>`;
+  return `<div class="status" aria-live="polite"></div>`;
+}
+function locationPermissionHelp(){
+  return `<section class="location-help" role="alert" aria-labelledby="location-help-title">
+    <h2 id="location-help-title">Location is blocked</h2>
+    <p>Open Understudy Audit in your regular phone browser if you are viewing it inside another app. Then allow location for this site:</p>
+    <div class="location-steps">
+      <div class="location-step"><span class="lab">Android · Chrome</span>Tap the site-controls icon beside the web address, then <strong>Permissions → Location → Allow</strong>.</div>
+      <div class="location-step"><span class="lab">iPhone · Safari</span>Tap the page menu, then <strong>More → Website Settings → Location → Allow</strong>.</div>
+    </div>
+    <p>Return here after changing the setting. Reload once if your browser does not recognize it immediately.</p>
+    <div class="location-actions"><button class="btn primary" type="button" onclick="retryDiscoveryLocation()">Try location again</button><button class="btn" type="button" onclick="location.reload()">Reload app</button></div>
+  </section>`;
+}
+function milesLabel(meters){
+  if(!Number.isFinite(Number(meters)))return "";
+  const miles=Number(meters)/1609.344;
+  return miles<.1?`${Math.max(1,Math.round(Number(meters)))} m away`:`${miles.toFixed(miles<1?1:0)} mi away`;
+}
+function discoveryResults(){
+  if(!discoverState.hasSearched)return "";
+  if(!discoverState.places.length&&!discoverState.busy)return `<div class="empty" style="padding:28px 16px">No matching restaurants found in this radius.</div>`;
+  return `<div class="result-list">${discoverState.places.map((place,index)=>`<div class="result">
+    <div><div class="name">${esc(place.name)}</div><div class="meta">${esc(place.primaryCategory)}${place.address?` · ${esc(place.address)}`:""}</div>${place.distanceMeters!=null?`<div class="distance">${esc(milesLabel(place.distanceMeters))}</div>`:""}</div>
+    <button class="btn primary" onclick="researchDiscovery(${index})">Research</button>
+  </div>`).join("")}</div>`;
+}
+function researchPanel(){
+  const result=discoverState.research;if(!result)return "";
+  const b=result.business||{};const evidence=Array.isArray(result.evidence)?result.evidence:[];const questions=Array.isArray(result.questions)?result.questions:[];
+  return `<div class="card" style="margin-top:18px">
+    <div class="section-title" style="border:0;padding-top:0;margin-top:0">Research draft</div>
+    <h2 style="font-family:var(--serif);margin:.35rem 0">${esc(b.name||"Selected business")}</h2>
+    <div class="muted">${esc(b.address||"")}</div>
+    <div class="evidence-list">${evidence.map(item=>`<div class="evidence"><div class="label">${esc(item.label||"Observed")}</div><div class="detail">${esc(item.detail)}</div>${item.sourceUrl?`<a class="source" href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(item.sourceLabel||"Open source")} ↗</a>`:""}</div>`).join("")}</div>
+    ${!b.website?`<div class="notice warn">No official website was present in the public directory record. Add the known website to check its ordering links.</div>`:""}
+    <label class="f"><span class="lab">Official website override</span><input id="research-website" type="url" value="${esc(b.website||"")}" placeholder="https://restaurant.example"></label>
+    <div class="row" style="margin-top:10px"><button class="btn" onclick="rerunWebsiteResearch()">Research website</button></div>
+    <div class="section-title">Confirm with the owner</div><ul class="question-list">${questions.map(question=>`<li>${esc(question)}</li>`).join("")}</ul>
+    <div class="notice warn">Delivery commissions and direct-processing rates below remain scenarios until statements and agreements confirm them.</div>
+    <div class="row"><button class="btn primary" onclick="saveDiscoveredAudit()">Save audit draft</button></div>
+  </div>`;
+}
+function renderDiscover(){
+  if(!Discovery){document.getElementById("app").innerHTML=`<div class="wrap"><div class="notice error">Discovery did not load.</div></div>`;return;}
+  if(!Discovery.hasConsent())return discoveryConsent();
+  const c=Discovery.loadConfig();
+  const connected=Boolean(c.serviceUrl&&c.accessToken);
+  document.getElementById("app").innerHTML=`
+    <div class="appbar"><button class="btn ghost" onclick="location.hash='#/'">‹ Audits</button><div><div class="brand">Understudy</div><h1>Nearby</h1></div><div class="sp"></div><button class="btn ghost" title="Discovery settings" aria-label="Discovery settings" onclick="location.hash='#/settings'">⚙</button></div>
+    <div class="wrap">
+      <div class="notice">Approximate location is used only for this screen and is not saved. Search results and public-site research require an internet connection.</div>
+      ${!connected?discoveryConnectionForm(!Discovery.DEFAULT_SERVICE_URL):`<form onsubmit="searchDiscovery(event)">
+        <div class="search-tools"><input id="discover-query" value="${esc(discoverState.query)}" placeholder="Restaurant or cafe name" aria-label="Restaurant or cafe name"><button class="btn primary" type="submit">Search</button></div>
+        <div class="discover-controls"><label class="f"><span class="lab">Radius</span><select id="discover-radius"><option value=".5" ${discoverState.radiusMiles===.5?"selected":""}>0.5 mile</option><option value="1" ${discoverState.radiusMiles===1?"selected":""}>1 mile</option><option value="3" ${discoverState.radiusMiles===3?"selected":""}>3 miles</option><option value="5" ${discoverState.radiusMiles===5?"selected":""}>5 miles</option></select></label><button class="btn" type="button" onclick="findNearby()">⌖ Restaurants near me</button></div>
+      </form>${discoveryStatus()}${discoveryResults()}${researchPanel()}
+      <div class="muted" style="margin-top:18px">Place data by <a href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a></div>`}
+    </div>`;
+  document.getElementById("present").classList.remove("on");
+}
+async function executeDiscoverySearch(query){
+  if(discoverState.busy)return;
+  const radius=Number(document.getElementById("discover-radius")?.value||discoverState.radiusMiles||1);
+  discoverState.radiusMiles=radius;discoverState.query=String(query||"").trim();discoverState.error="";discoverState.message="";discoverState.locationIssue="";discoverState.research=null;
+  try{
+    if(!discoverState.location){discoverState.busy="Getting your approximate location…";renderDiscover();discoverState.location=await Discovery.getApproximateLocation();}
+    discoverState.busy=discoverState.query?`Searching near you for “${discoverState.query}”…`:"Finding restaurants near you…";renderDiscover();
+    const result=await Discovery.searchBusinesses({query:discoverState.query,location:discoverState.location,radiusMiles:radius});
+    discoverState.places=Array.isArray(result.places)?result.places:[];discoverState.hasSearched=true;discoverState.message=`${discoverState.places.length} restaurant${discoverState.places.length===1?"":"s"} found.`;
+  }catch(error){discoverState.error=error.message;discoverState.locationIssue=error?.code==="LOCATION_PERMISSION_DENIED"?"denied":"";discoverState.places=[];}finally{discoverState.busy="";renderDiscover();}
+}
+function searchDiscovery(event){event.preventDefault();const q=document.getElementById("discover-query").value.trim();if(!q){discoverState.error="Enter a restaurant or cafe name, or use Restaurants near me.";renderDiscover();return;}executeDiscoverySearch(q);}
+function findNearby(){executeDiscoverySearch("");}
+function retryDiscoveryLocation(){discoverState.location=null;discoverState.error="";discoverState.locationIssue="";executeDiscoverySearch(discoverState.query);}
+async function researchDiscovery(index,website=""){
+  if(discoverState.busy)return;const place=discoverState.places[index];if(!place)return;
+  discoverState.selectedIndex=index;discoverState.research=null;discoverState.error="";discoverState.message="";discoverState.busy=`Researching ${place.name}…`;renderDiscover();
+  try{discoverState.research=await Discovery.researchBusiness({...place,website});discoverState.message="Research draft ready. Review every source before presenting.";}
+  catch(error){discoverState.error=error.message;}finally{discoverState.busy="";renderDiscover();}
+}
+function rerunWebsiteResearch(){const site=document.getElementById("research-website")?.value.trim()||"";researchDiscovery(discoverState.selectedIndex,site);}
+function saveDiscoveredAudit(){
+  if(!discoverState.research)return;const audit=Discovery.auditFromResearch(discoverState.research,uid);const list=loadAll()||[];
+  list.push(audit);saveAll(list);Object.assign(discoverState,{research:null,places:[],location:null,selectedIndex:-1,hasSearched:false,message:"",error:""});location.hash="#/edit/"+audit.id;
+}
+function renderDiscoverySettings(){
+  if(!Discovery.hasConsent())return discoveryConsent();
+  document.getElementById("app").innerHTML=`<div class="appbar"><button class="btn ghost" onclick="location.hash='#/discover'">‹ Nearby</button><div class="sp"></div><div class="brand">Settings</div></div>
+    <div class="wrap">${discoveryConnectionForm(true)}
+      <div class="card"><div class="section-title" style="border:0;padding-top:0;margin-top:0">Privacy reset</div><div class="muted">This clears the discovery connection and consent from this device. Saved audits are not deleted.</div><div class="row" style="margin-top:14px"><button class="btn danger" onclick="forgetDiscovery()">Forget discovery access</button></div></div>
+      ${discoverState.error?`<div class="notice error">${esc(discoverState.error)}</div>`:discoverState.message?`<div class="notice">${esc(discoverState.message)}</div>`:""}
+    </div>`;
+  document.getElementById("present").classList.remove("on");
+}
+function forgetDiscovery(){if(!confirm("Forget discovery consent and connection on this device?"))return;Discovery.revokeConsent();Discovery.clearConfig();Object.assign(discoverState,{location:null,places:[],selectedIndex:-1,research:null,query:"",hasSearched:false,busy:"",error:"",message:"",locationIssue:""});location.hash="#/";}
+
+/* ============================ EDITOR ============================ */
+function renderEditor(id){
+  const b=getBiz(id); if(!b){location.hash="#/";return;}
+  const obs=(b.observed||[]).map((o,i)=>obsRow(o,i)).join("");
+  const numbers = b.type==="food" ? foodFields(b) : serviceFields(b);
+  document.getElementById("app").innerHTML=`
+    <div class="appbar"><button class="btn ghost" onclick="location.hash='#/'">‹ All</button>
+      <div class="sp"></div><div class="brand">Editing</div></div>
+    <div class="wrap">
+      <div class="seg" style="margin-bottom:6px">
+        <button class="${b.type==='service'?'on':''}" onclick="setType('${id}','service')">Service</button>
+        <button class="${b.type==='food'?'on':''}" onclick="setType('${id}','food')">Cafe / Retail</button>
+      </div>
+      <form id="ef" oninput="stage('${id}')">
+        <label class="f"><span class="lab">Business name</span><input name="name" value="${esc(b.name)}"></label>
+        <label class="f"><span class="lab">Category / location line</span><input name="category" value="${esc(b.category)}"></label>
+        <div class="grid2">
+          <label class="f"><span class="lab">Date line</span><input name="date" value="${esc(b.date)}" placeholder="August 2026"></label>
+          <label class="f"><span class="lab">The ask</span><input name="ask" value="${esc(b.ask)}"></label>
+        </div>
+        <div class="section-title">What you can see (public facts)</div>
+        <div class="muted">Only what's genuinely public. This is what proves you looked.</div>
+        <div id="obs">${obs}</div>
+        <button type="button" class="btn" style="margin-top:10px" onclick="addObs('${id}')">+ Add a fact</button>
+        ${researchSummary(b)}
+        <div class="section-title">The numbers (honest models)</div>
+        ${numbers}
+      </form>
+    </div>
+    <div class="savebar">
+      <button class="btn" onclick="location.hash='#/'">Done</button>
+      ${b.ownerBrief?`<button class="btn" onclick="stage('${id}');location.hash='#/brief/${id}'">Owner brief</button>`:""}
+      <button class="btn primary" onclick="location.hash='#/present/${id}'">Present ›</button>
+    </div>`;
+  document.getElementById("present").classList.remove("on");
+}
+function factSources(o){
+ const list=Array.isArray(o.sources)?o.sources:[];
+ if(list.length)return list.filter(source=>source&&source.url);
+ return o.sourceUrl?[{label:o.sourceLabel||"Open source",url:o.sourceUrl}]:[];
+}
+function obsRow(o,i){const sources=factSources(o);return `<div class="obs-row">
+  <input data-o="tag" data-i="${i}" value="${esc(o.tag)}" placeholder="Tag" aria-label="tag">
+  <textarea data-o="text" data-i="${i}" placeholder="What you can see (public)…" aria-label="fact">${esc(o.text)}</textarea>
+  <button type="button" class="btn ghost danger" onclick="rmObs(${i})" aria-label="remove">✕</button></div>
+  ${sources.length?`<span class="obs-source">${sources.map(source=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.label||"Open source")} ↗</a>`).join(" · ")}</span>`:""}`;}
+function researchSummary(b){
+  if(!b.research)return "";const questions=Array.isArray(b.research.questions)?b.research.questions:[];const sources=Array.isArray(b.research.sources)?b.research.sources:[];
+  return `<div class="section-title">Research record</div><div class="muted">Draft researched ${esc(b.research.researchedAt?new Date(b.research.researchedAt).toLocaleString():"date unavailable")} · ${esc(b.research.provider||"Public sources")}</div>
+    ${b.research.website?`<a class="source" href="${esc(b.research.website)}" target="_blank" rel="noopener noreferrer">Official website ↗</a>`:""}
+    ${sources.length?`<div class="source-list">${sources.map(source=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.label)} ↗</a>`).join("")}</div>`:""}
+    ${questions.length?`<ul class="question-list">${questions.map(question=>`<li>${esc(question)}</li>`).join("")}</ul>`:""}`;
+}
+function num(name,label,val,step){return `<label class="f"><span class="lab">${label}</span><input type="number" step="${step||'any'}" name="${name}" value="${val}"></label>`;}
+function serviceFields(b){return `<div class="grid3">
+  ${num("onlineVolume","Online $/mo",b.onlineVolume)}${num("onlineTxns","Online orders/mo",b.onlineTxns)}${num("currentRate","Their rate (e.g. .049)",b.currentRate,"0.001")}
+  ${num("servicesMo","Services/mo",b.servicesMo)}${num("noShowRate","No-show rate (.07)",b.noShowRate,"0.01")}${num("avgTicket","Avg ticket $",b.avgTicket)}
+  ${num("saasReducibleMo","Tool $/mo saved",b.saasReducibleMo)}${num("adminHoursMo","Admin hrs/mo",b.adminHoursMo)}${num("hourlyValue","$/hour",b.hourlyValue)}
+  ${num("buildFee","Build fee $",b.buildFee)}</div>`;}
+function foodFields(b){return `<div class="grid3">
+  ${num("commissionLow","App % low (.15)",b.commissionLow,"0.01")}${num("commissionMid","App % typical (.25)",b.commissionMid,"0.01")}${num("commissionHigh","App % high (.30)",b.commissionHigh,"0.01")}
+  ${num("directRate","Their own rate (.035)",b.directRate,"0.001")}</div>
+  <label class="f"><span class="lab">Ordering surfaces (comma-separated)</span><input name="surfaces" value="${esc((b.surfaces||[]).join(', '))}"></label>`;}
+
+function stage(id){
+  const list=loadAll()||[];const b=list.find(x=>x.id===id);if(!b)return;
+  const f=document.getElementById("ef");
+  ["name","category","date","ask"].forEach(k=>{const el=f.querySelector(`[name="${k}"]`);if(el)b[k]=el.value;});
+  f.querySelectorAll('input[type="number"]').forEach(el=>{b[el.name]=el.value===""?0:Number(el.value);});
+  const surf=f.querySelector('[name="surfaces"]');if(surf)b.surfaces=surf.value.split(",").map(s=>s.trim()).filter(Boolean);
+  const previous=Array.isArray(b.observed)?b.observed:[];const rows={};f.querySelectorAll("#obs [data-o]").forEach(el=>{const i=el.dataset.i;(rows[i]=rows[i]||{})[el.dataset.o]=el.value;});
+  b.observed=Object.keys(rows).sort((a,c)=>a-c).map(i=>({...previous[Number(i)],...rows[i]}));
+  saveAll(list);
+}
+function addObs(id){stage(id);const list=loadAll()||[];const b=list.find(x=>x.id===id);b.observed.push({tag:"",text:""});saveAll(list);renderEditor(id);}
+function rmObs(i){const id=location.hash.split("/")[2];stage(id);const list=loadAll()||[];const b=list.find(x=>x.id===id);b.observed.splice(i,1);if(!b.observed.length)b.observed.push({tag:"",text:""});saveAll(list);renderEditor(id);}
+function setType(id,type){stage(id);const list=loadAll()||[];const b=list.find(x=>x.id===id);if(b.type===type)return;
+  if(type==="food")Object.assign(b,{type,commissionLow:b.commissionLow??.15,commissionMid:b.commissionMid??.25,commissionHigh:b.commissionHigh??.30,directRate:b.directRate??.035,surfaces:b.surfaces||[]});
+  else Object.assign(b,{type,onlineVolume:b.onlineVolume||0,onlineTxns:b.onlineTxns||0,currentRate:b.currentRate??.049,currentFixed:.30,stripeRate:.029,stripeFixed:.30,saasReducibleMo:b.saasReducibleMo||0,servicesMo:b.servicesMo||0,noShowRate:b.noShowRate??.05,avgTicket:b.avgTicket||0,noShowRecoverPct:.70,adminHoursMo:b.adminHoursMo||0,hourlyValue:b.hourlyValue||50,buildFee:b.buildFee||3500});
+  saveAll(list);renderEditor(id);}
+
+/* ============================ OWNER BRIEF ============================ */
+function briefSources(b){
+ const all=[...(b.research?.sources||[]),...(b.observed||[]).flatMap(factSources)];const seen=new Set();
+ return all.filter(source=>{if(!source?.url||seen.has(source.url))return false;seen.add(source.url);return true;});
+}
+function renderOwnerBrief(id){
+ const b=PUBLIC_BRIEFS.find(item=>item.id===id)||getBiz(id);if(!b?.ownerBrief){location.hash=b?`#/edit/${id}`:"#/";return;}
+ if(b.ownerBrief.kind==="systems")return renderSystemsBrief(b);
+ const brief=b.ownerBrief;const findings=Array.isArray(brief.findings)?brief.findings:[];const questions=Array.isArray(brief.questions)?brief.questions:[];
+ const solutions=Array.isArray(b.solutionCards)?b.solutionCards:[];const audiences=Array.isArray(b.audiences)?b.audiences:[];
+ const inputs=Array.isArray(b.ownerInputs)?b.ownerInputs:[];const metrics=Array.isArray(b.metrics)?b.metrics:[];const sources=briefSources(b);
+ const direct=Number.isFinite(b.directRate)?b.directRate:.035;const rates=[.15,.20,.25,.30];const volumes=[1000,5000,10000];
+ const feeRows=rates.map(rate=>`<tr><td>${Math.round(rate*100)}% marketplace fee</td>${volumes.map(volume=>`<td>${money(volume*(rate-direct))}</td>`).join("")}</tr>`).join("");
+ const routeButton=(target,label)=>`<button type="button" onclick="document.getElementById('${target}').scrollIntoView({behavior:'smooth'})">${label}</button>`;
+ document.getElementById("app").innerHTML=`
+  <div class="appbar brief-appbar"><button class="btn ghost" onclick="location.hash='#/'">‹ Audits</button>
+    <div><div class="brand">Owner brief</div><h1>${bizName(b)} conversation</h1></div><div class="sp"></div>
+    <button class="btn primary" onclick="location.hash='#/present/${id}'">Present</button></div>
+  <main class="brief-wrap">
+   <header class="brief-hero">
+    <div class="brief-kicker">${esc(b.name)} · prepared ${esc(b.date||"August 2026")}</div>
+    <h2>Talk with the owner, not at the owner.</h2>
+    <p class="lead">Use this brief beside the slide deck. Lead with what ${bizName(b)} has already built, ask before diagnosing, and use the money example only after the owner confirms the real workflow.</p>
+    <p class="muted">Public-footprint research only. ${bizName(b)}'s private accounts, contracts, customer records, and financial statements have not been reviewed.</p>
+    <div class="brief-note"><strong>Meeting goal:</strong> ${esc(brief.meetingGoal)}</div>
+    <p><a class="btn primary" href="#/meeting/${encodeURIComponent(id)}">Record conversation</a></p>
+    <nav class="brief-route" aria-label="Conversation sections">${routeButton("brief-open","Open")}${routeButton("brief-verify","Verify")}${routeButton("brief-ask","Ask")}${routeButton("brief-recommend","Recommend")}${routeButton("brief-money","Money")}${routeButton("brief-close","Close")}${routeButton("brief-evidence","Evidence")}</nav>
+   </header>
+
+   <section class="brief-section" id="brief-open">
+    <div class="brief-step">01 · Open</div><h2>Start with respect for what ${bizName(b)} already has.</h2>
+    <div class="brief-say"><span class="brief-label">Say this</span><p>“${esc(brief.opening)}”</p></div>
+    <ul class="brief-list"><li><strong>Do not open with fees.</strong> First establish that the existing systems have value.</li><li><strong>Ask for correction early.</strong> Say, “I researched this from the outside, so please correct anything I have wrong.”</li><li><strong>Frame the meeting as discovery.</strong> The goal is an accurate baseline, not an instant rebuild.</li></ul>
+   </section>
+
+   <section class="brief-section" id="brief-verify">
+    <div class="brief-step">02 · Verify</div><h2>Show that you looked, then let the owner correct the picture.</h2>
+    <p class="brief-copy">Use each observation as a short statement followed by a confirmation question. Treat every unconfirmed connection between systems as a hypothesis.</p>
+    <div class="brief-findings">${findings.map(item=>`<article class="brief-finding"><div><h3>${esc(item.title)}</h3></div><div><p>${esc(item.say)}</p><div class="brief-confirm">${esc(item.confirm)}</div></div></article>`).join("")}</div>
+   </section>
+
+   <section class="brief-section" id="brief-ask">
+    <div class="brief-step">03 · Ask</div><h2>These questions reveal where the money and customer relationship split.</h2>
+    <p class="brief-copy">You do not need to ask every question in one sitting. Start with channels, customer ownership, and actual fees. Use the rest when the owner has time or during the records review.</p>
+    <div class="brief-questions">${questions.map((item,index)=>`<article class="brief-question"><div><div class="brief-step">Question ${String(index+1).padStart(2,"0")}</div><h3>${esc(item.ask)}</h3></div><div><p><strong>Why it matters:</strong> ${esc(item.why)}</p><div class="brief-listen">${esc(item.listen)}</div></div></article>`).join("")}</div>
+   </section>
+
+   <section class="brief-section" id="brief-recommend">
+    <div class="brief-step">04 · Recommend</div><h2>Explain “one place” without suggesting one forced checkout.</h2>
+    <div class="brief-say"><span class="brief-label">Say this</span><p>“${esc(brief.recommendation)}”</p></div>
+    <div class="pflow" aria-label="Recommended customer flow">${(b.consolidationFlow||[]).map((step,index)=>`<div class="pstep"><span class="s">${String(index+1).padStart(2,"0")}</span><b>${esc(step)}</b></div>${index<(b.consolidationFlow||[]).length-1?'<div class="parrow">→</div>':""}`).join("")}</div>
+    <h3 style="margin-top:24px">How this reaches loyal customers</h3>
+    <div class="brief-plan">${audiences.map(item=>`<article class="brief-plan-row"><div><h3>${esc(item.who)}</h3><div class="brief-confirm">Measure: ${esc(item.metric)}</div></div><div><p>${esc(item.next)}</p></div></article>`).join("")}</div>
+    <div class="brief-note"><strong>Permission rule:</strong> Marketplace records are used to understand channel economics, not to create a marketing list. A marketplace guest becomes reachable only after choosing a fresh owned opt-in.</div>
+   </section>
+
+   <section class="brief-section" id="brief-money">
+    <div class="brief-step">05 · Money</div><h2>Show the fee gap as a scenario, not a promise.</h2>
+    <div class="brief-say warm"><span class="brief-label">Say this before the table</span><p>“This is the only dollar example I can defend without seeing your books. It shows a gross fee gap for orders that move to owned pickup. It is not ${bizName(b)}’s monthly savings, and it does not apply unchanged to delivery.”</p></div>
+    <div class="brief-table-wrap"><table class="brief-table"><thead><tr><th>Published scenario</th><th>$1,000 shifted</th><th>$5,000 shifted</th><th>$10,000 shifted</th></tr></thead><tbody>${feeRows}</tbody></table></div>
+    <p class="brief-copy">The table uses an unconfirmed <strong>${(direct*100).toFixed(1)}% direct-processing assumption</strong>. DoorDash publicly lists 15%, 25%, and 30% marketplace tiers; Uber Eats publicly lists 20%, 25%, and 30% U.S. tiers.</p>
+    <div class="brief-proof"><div><h3>Owned pickup</h3><p>Shifted marketplace sales × (actual marketplace cost − actual direct processing cost).</p></div><div><h3>Owned delivery</h3><p>Start with the pickup gap, then subtract direct fulfillment, added operating cost, promotions, refunds, and support.</p></div><div><h3>Retention</h3><p>Reachable opted-in customers × added owned orders × average ticket × contribution margin.</p></div><div><h3>Catering</h3><p>Recovered paid orders × collected average invoice × contribution margin.</p></div><div><h3>Membership</h3><p>Monthly price × active members is gross recurring revenue before every product, packing, discount, support, refund, and churn cost.</p></div><div><h3>Staff time</h3><p>Reconciliation and follow-up hours removed × the business’s loaded hourly value.</p></div></div>
+   </section>
+
+   <section class="brief-section">
+    <div class="brief-step">06 · Offer</div><h2>Offer a phased system, beginning with the smallest useful fix.</h2>
+    <div class="brief-plan">${solutions.map((item,index)=>`<article class="brief-plan-row"><div><div class="brief-step">Phase ${String(index+1).padStart(2,"0")}</div><h3>${esc(item.title)}</h3></div><div><p>${esc(item.fix)}</p><div class="brief-confirm">Expected result: ${esc(item.benefit)}</div></div></article>`).join("")}</div>
+    <p class="brief-copy">The first phase should clean public paths and establish accurate records. Connections and automation come only after ${bizName(b)} confirms what each current tool already does.</p>
+    <h3 style="margin-top:24px">A practical 90-day rollout</h3>
+    <div class="brief-plan">${(b.roadmap||[]).map(item=>`<article class="brief-plan-row"><div><div class="brief-step">${esc(item.when)}</div><h3>${esc(item.title)}</h3></div><div><p>${esc(item.detail)}</p></div></article>`).join("")}</div>
+   </section>
+
+   <section class="brief-section">
+    <div class="brief-step">07 · Request</div><h2>Ask for one ordinary month, not unlimited access.</h2>
+    <ul class="brief-list">${inputs.map(item=>`<li>${esc(item)}</li>`).join("")}</ul>
+    <h3 style="margin-top:24px">What the owner gets back</h3>
+    <ul class="brief-list">${metrics.map(item=>`<li>${esc(item)}</li>`).join("")}</ul>
+   </section>
+
+   <section class="brief-section" id="brief-close">
+    <div class="brief-step">08 · Close</div><h2>Ask for the records review, not the whole project.</h2>
+    <div class="brief-say"><span class="brief-label">Say this</span><p>“${esc(brief.close)}”</p></div>
+    <h3 style="margin-top:24px">Do not overstate</h3>
+    <ul class="brief-list">${(brief.guardrails||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ul>
+   </section>
+
+   <section class="brief-section" id="brief-evidence">
+    <div class="brief-step">Evidence</div><h2>Keep this section for backup when the owner asks how you know.</h2>
+    <div class="brief-details">
+     <details><summary>Public system map</summary><div class="brief-plan">${(b.systemMap||[]).map(item=>`<article class="brief-plan-row"><div><h3>${esc(item.channel)}</h3><div class="brief-confirm">${esc(item.decision)}</div></div><div><p>${esc(item.role)}</p></div></article>`).join("")}</div></details>
+     <details><summary>Research limits</summary><ul class="brief-list"><li>Public listings may be stale or personalized by location and time.</li><li>Published platform tiers may differ from ${bizName(b)}’s negotiated contracts.</li><li>Ratings show marketplace activity, not current monthly order volume.</li><li>No customer identity, consent, integration, or data-quality claim is made without account access.</li><li>No monthly savings, payback period, or revenue lift is claimed from public evidence.</li></ul></details>
+     <details><summary>Sources (${sources.length})</summary><div class="brief-source-list">${sources.map(source=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.label||"Open source")} ↗</a>`).join("")}</div></details>
+    </div>
+   </section>
+  </main>`;
+ document.getElementById("present").classList.remove("on");document.getElementById("present").setAttribute("aria-hidden","true");
+ window.scrollTo(0,0);
+}
+
+/* ============================ PRESENT ============================ */
+let pcur=-1,pslides=[],preturn="#/";
+function present(id){
+  const b=getBiz(id);if(!b){location.hash="#/";return;}
+  preturn=document.getElementById("ef")?"#/edit/"+id:"#/";
+  pslides = b.type==="food" ? foodSlides(b) : serviceSlides(b);
+  document.getElementById("deck").innerHTML=pslides.join("");
+  document.getElementById("pmodeled").innerHTML = b.type==="food"
+    ? "Public facts link to their sources. Delivery dollars are gross per-$1,000 scenarios at assumed rates, not the business's books; net savings require statements and fulfillment costs."
+    : "Every figure is a model from public info — a fair estimate, not a claim about their books. Real numbers come from the 15-minute look.";
+  document.getElementById("present").classList.add("on");
+  document.getElementById("present").setAttribute("aria-hidden","false");
+  pcur=-1;pgo(0);
+}
+function closePresent(){document.getElementById("present").classList.remove("on");document.getElementById("present").setAttribute("aria-hidden","true");if(location.hash.startsWith("#/present"))location.hash=preturn;else router();}
+function pgo(i){const S=[...document.querySelectorAll("#deck .slide")];if(!S.length)return;i=Math.max(0,Math.min(S.length-1,i));if(i===pcur)return;
+  S.forEach((s,k)=>s.classList.toggle("active",k===i));document.getElementById("pcount").textContent=(i+1)+" / "+S.length;pcur=i;
+  S[i].querySelectorAll(".pfill").forEach(f=>{f.style.width="0";requestAnimationFrame(()=>requestAnimationFrame(()=>f.style.width=f.dataset.w+"%"));});}
+addEventListener("keydown",e=>{if(!document.getElementById("present").classList.contains("on"))return;
+  if(e.key==="ArrowRight"||e.key===" ")pgo(pcur+1);else if(e.key==="ArrowLeft")pgo(pcur-1);else if(e.key==="Escape")closePresent();});
+let psx=null;document.getElementById("present").addEventListener("touchstart",e=>psx=e.touches[0].clientX,{passive:true});
+document.getElementById("present").addEventListener("touchend",e=>{if(psx==null)return;const dx=e.changedTouches[0].clientX-psx;if(Math.abs(dx)>50)pgo(pcur+(dx<0?1:-1));psx=null;},{passive:true});
+
+const factsList=(b,items=b.observed||[])=>`<ul class="facts">${items.filter(o=>o.text).map(o=>{const sources=factSources(o);return `<li><span class="tg">${esc(o.tag)}</span><span>${safeFact(o.text)}${sources.length?`<span class="fact-source">${sources.map(source=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.label)}</a>`).join(" · ")}</span>`:""}</span></li>`;}).join("")}</ul>`;
+const cover=(b,thesis)=>`<section class="slide"><p class="eyebrow">Revenue &amp; Systems Snapshot</p><h1>${esc(b.name)}</h1>
+  <p class="lead">${esc(b.category)}</p><p class="lead" style="margin-top:1.4rem"><strong>${thesis}</strong></p>
+  <p class="fine" style="margin-top:1.8rem">Prepared by Frank Epps · Understudy${b.date?" · "+esc(b.date):""}</p></section>`;
+const askSlide=(b,lines)=>`<section class="slide"><p class="eyebrow">The ask</p><h1>${esc(b.ask||"A free 15-minute look")}.</h1>
+  <p class="lead">No pitch, no cost — I want to help you keep more of what you already earn. Fifteen minutes, your real numbers, an honest read — even if it's "just fix this one thing."</p>
+  <ul class="asklist">${lines.map(l=>`<li><span class="d">→</span><span>${l}</span></li>`).join("")}</ul>
+  <div class="pcta">${esc(b.ask||"A free 15-minute look")} →</div>
+  <p class="fine" style="margin-top:1.2rem">Frank Epps · Understudy · understudy.consulting</p></section>`;
+const solutionsSlide=cards=>`<section class="slide"><p class="eyebrow">What I'd build for you</p>
+  <h2>Sized to what I found — you choose where to start.</h2>
+  <div class="sols">${cards.map(c=>`<div class="sol"><div class="sol-h">${esc(c.title)}</div><div class="sol-f">${safeFact(c.fix)}</div><div class="sol-b">${esc(c.benefit)}</div></div>`).join("")}</div>
+  <p class="fine" style="margin-top:1.1rem">Start with one — each pays for itself before the next.</p></section>`;
+function foodSols(b){
+  if(Array.isArray(b.solutionCards)&&b.solutionCards.length)return b.solutionCards.slice(0,3);
+  const direct=1000*b.directRate,keptLo=1000*b.commissionLow-direct,keptHi=1000*b.commissionHigh-direct;
+  const s=[
+    {title:"Win delivery regulars back",fix:"A card + QR in every delivery bag inviting customers to order direct next time — landing on your own ordering where they opt in and become yours.",benefit:"app orders → your customers"},
+    {title:"Your own ordering + loyalty",fix:"The direct link they land on — priced at your own rate, building the list you own and can actually market to.",benefit:`keep ~${money(keptLo)}–${money(keptHi)} / $1,000`},
+    {title:"Unify counter + online + catering",fix:"One checkout and one dashboard across the counter, online orders, and catering.",benefit:"one customer view"},
+  ];
+  return s.slice(0,3);
+}
+function serviceSols(b){
+  const cardNow=b.onlineVolume*b.currentRate+b.onlineTxns*(b.currentFixed||.30),cardAfter=b.onlineVolume*(b.stripeRate||.029)+b.onlineTxns*(b.stripeFixed||.30);
+  const cardSave=Math.max(0,cardNow-cardAfter),noShowRec=b.servicesMo*b.noShowRate*b.avgTicket*(b.noShowRecoverPct||.70);
+  const s=[];
+  if(cardSave>0)s.push({title:"Direct checkout",fix:"Off the platform's stacked fee and onto a direct rate you keep.",benefit:`${money(cardSave)}/mo back`});
+  if(noShowRec>0)s.push({title:"Deposits + auto-reminders",fix:"Hold each slot with a deposit and cut no-shows with automatic reminders.",benefit:`${money(noShowRec)}/mo recovered`});
+  if((b.saasReducibleMo||0)>0||b.adminHoursMo>0)s.push({title:"Consolidate + automate",fix:"Replace the scattered tools with one flow that runs the busywork for you.",benefit:`${money(b.saasReducibleMo||0)}/mo${b.adminHoursMo?` + ${b.adminHoursMo} hrs`:""}`});
+  if(!s.length)s.push({title:"One connected system",fix:"Booking, payment, and follow-up brought into one place.",benefit:"less busywork"});
+  return s.slice(0,3);
+}
+
+function renderSystemsBrief(b){
+ const brief=b.ownerBrief;
+ const sourceLink=source=>`<a href="${esc(source.url)}" target="_blank" rel="noopener noreferrer">${esc(source.label)}</a>`;
+ document.getElementById("present").classList.remove("on");
+ document.getElementById("app").innerHTML=`
+  <div class="appbar"><a class="btn ghost" href="#/">&lsaquo; Audits</a><div class="sp"></div><a class="btn" href="#/meeting/${encodeURIComponent(b.id)}">Meeting</a><div class="brand">Understudy</div></div>
+  <main class="brief-wrap systems-brief">
+   <header class="brief-hero"><div class="brief-kicker">${esc(b.name)}</div><h1>${esc(brief.title)}</h1>
+    <p class="brief-copy">${esc(brief.status)}<br>Checked ${esc(brief.checked)}</p>
+    <div class="brief-say"><span class="brief-label">Start here</span><p>${esc(brief.opening)}</p></div>
+    <p class="brief-copy">${esc(brief.boundary)}</p>
+    <nav class="brief-route" aria-label="Brief sections">${brief.sections.map((section,index)=>`<button onclick="document.getElementById('systems-${index}').scrollIntoView({block:'start'})">${esc(section.label)}</button>`).join("")}<button onclick="document.getElementById('systems-sources').scrollIntoView({block:'start'})">Sources</button></nav>
+   </header>
+   ${brief.sections.map((section,index)=>`<section class="brief-section" id="systems-${index}">
+    <div class="brief-step">${String(index+1).padStart(2,"0")} / ${esc(section.label)}</div><h2>${esc(section.title)}</h2>
+    ${section.intro?`<p class="brief-copy">${esc(section.intro)}</p>`:""}
+    ${section.rows?`<div class="brief-findings">${section.rows.map(row=>{const source=brief.sources.find(item=>item.id===row.source);return `<article class="brief-finding"><h3>${esc(row.title)}</h3><div><p>${esc(row.text)}</p>${source?`<div class="brief-source-list">${sourceLink(source)}</div>`:""}</div></article>`;}).join("")}</div>`:""}
+    ${section.items?`<ul class="brief-list">${section.items.map(item=>`<li>${esc(item)}</li>`).join("")}</ul>`:""}
+    ${section.note?`<p class="brief-note">${esc(section.note)}</p>`:""}
+   </section>`).join("")}
+   <section class="brief-section" id="systems-sources"><div class="brief-step">Evidence</div><h2>Public sources and limits</h2>
+    <div class="brief-source-list">${brief.sources.map(sourceLink).join("")}</div>
+    <p class="brief-copy">These links support the public observations and possible checks, not a claim about private account settings. Websites can change after the date above. No inquiry, booking, or payment was submitted during the research.</p>
+   </section>
+  </main>`;
+ window.scrollTo(0,0);
+}
+
+function foodSystemSlide(b){
+ const rows=Array.isArray(b.systemMap)?b.systemMap:[];
+ return `<section class="slide"><p class="eyebrow warm">${bizName(b)}'s public system today</p><h2>The pieces are useful. The relationship between them is fragmented.</h2>
+   <div class="pmatrix"><div class="pmatrix-row head"><span>Channel</span><span>What it does now</span><span>Decision</span></div>
+   ${rows.map(row=>`<div class="pmatrix-row"><span class="channel">${esc(row.channel)}</span><span class="role">${esc(row.role)}</span><span class="decision"><strong>Recommended</strong>${esc(row.decision)}</span></div>`).join("")}</div></section>`;
+}
+function foodEconomicsSlide(b){
+ const rows=Array.isArray(b.economics)?b.economics:[];
+ return `<section class="slide"><p class="eyebrow">How the system creates value</p><h2>Six measurable paths — only one can be priced from public data today.</h2>
+   <p class="lead">The customer hub saves money by shifting repeat orders, reducing repeated work, and making follow-up consistent. ${bizName(b)}'s records turn these formulas into dollars:</p>
+   <div class="pmath">${rows.map(row=>`<div class="pmath-row"><span class="name">${esc(row.name)}</span><span class="formula">${esc(row.formula)}</span></div>`).join("")}</div>
+   <p class="fine" style="margin-top:.9rem">Membership revenue is recurring revenue visibility, not a savings claim. Catering, retention, and staff-time value remain blank until ${bizName(b)} supplies the baseline.</p></section>`;
+}
+function foodArchitectureSlide(b){
+ const flow=Array.isArray(b.consolidationFlow)?b.consolidationFlow:[];
+ return `<section class="slide"><p class="eyebrow">The fix · one customer home</p><h2>One permissioned ${bizName(b)} record behind every useful sales channel.</h2>
+   <div class="pflow">${flow.map((step,index)=>`<div class="pstep"><span class="s">${String(index+1).padStart(2,"0")}</span><b>${esc(step)}</b></div>${index<flow.length-1?'<div class="parrow">→</div>':""}`).join("")}</div>
+   <p class="lead" style="margin-top:1.35rem"><strong>One place does not mean one checkout.</strong> ${bizName(b)} keeps the POS for local transactions, the website for owned commerce, the membership for recurring members, catering for events, and marketplaces for discovery. The new layer connects identity, consent, history, and the next action.</p>
+   <div class="pchips"><span class="pchip own">owned opt-ins only</span><span class="pchip own">deduplicated customer view</span><span class="pchip own">channel-level margin</span><span class="pchip own">unsubscribe + suppression rules</span></div></section>`;
+}
+function foodAudienceSlide(b){
+ const audiences=Array.isArray(b.audiences)?b.audiences:[];
+ return `<section class="slide"><p class="eyebrow">Reach loyal customers in one place</p><h2>Different relationships need different next messages.</h2>
+   <div class="paudiences">${audiences.map(audience=>`<div class="paudience"><div class="who">${esc(audience.who)}</div><div class="next">${esc(audience.next)}</div><div class="metric">Measure: ${esc(audience.metric)}</div></div>`).join("")}</div>
+   <p class="fine" style="margin-top:.8rem">DoorDash and Uber Eats remain acquisition channels. Marketplace customer information is never imported for marketing; the relationship becomes owned only after a fresh opt-in on ${bizName(b)}'s channel.</p></section>`;
+}
+function foodRoadmapSlide(b){
+ const phases=Array.isArray(b.roadmap)?b.roadmap:[];
+ return `<section class="slide"><p class="eyebrow">A practical 90-day rollout</p><h2>Clean first, connect second, automate third.</h2>
+   <div class="proadmap">${phases.map(phase=>`<div class="proad"><div class="when">${esc(phase.when)}</div><div class="title">${esc(phase.title)}</div><div class="detail">${esc(phase.detail)}</div></div>`).join("")}</div>
+   <p class="lead" style="margin-top:1.25rem">Every phase has a stop decision. ${bizName(b)} keeps any existing tool that is cheaper and more reliable than replacing it.</p></section>`;
+}
+function foodInputsSlide(b){
+ const inputs=Array.isArray(b.ownerInputs)?b.ownerInputs:[];const metrics=Array.isArray(b.metrics)?b.metrics:[];
+ return `<section class="slide"><p class="eyebrow warm">What turns this audit into ${bizName(b)}'s dollars</p><h2>One ordinary month is enough for the first defensible baseline.</h2>
+   <div class="ptwo"><div><h3>Owner inputs</h3><ul class="pplain">${inputs.map(item=>`<li>${esc(item)}</li>`).join("")}</ul></div>
+   <div><h3>Monthly scorecard</h3><ul class="pplain">${metrics.map(item=>`<li>${esc(item)}</li>`).join("")}</ul></div></div>
+   <p class="fine" style="margin-top:.9rem">Output: keep, connect, replace, or do nothing for each channel — with dollars attached only where ${bizName(b)}'s records support them.</p></section>`;
+}
+function foodSlides(b){
+  const appMid=1000*b.commissionMid,direct=1000*b.directRate,keptLo=1000*b.commissionLow-direct,keptHi=1000*b.commissionHigh-direct;
+  const detailed=Array.isArray(b.systemMap)&&b.systemMap.length>0;
+  const scenario=`<section class="slide"><p class="eyebrow warm">Modeled scenario · marketplace to owned pickup</p>
+     <h2>Published marketplace tiers show a real fee gap. ${bizName(b)}'s statements decide its size.</h2>
+     <p class="lead">For each <strong>$1,000</strong> shifted from a marketplace to owned pickup, the gross modeled fee difference is:</p>
+     <div class="pbars"><div class="pbar"><span class="lab">Marketplace model (~${Math.round(b.commissionMid*100)}%)</span><div class="ptrack"><div class="pfill leak" data-w="100"></div></div><span class="val leak">${money(appMid)}</span></div>
+     <div class="pbar"><span class="lab">Assumed direct processing</span><div class="ptrack"><div class="pfill save" data-w="${(direct/appMid*100).toFixed(1)}"></div></div><span class="val save">${money(direct)}</span></div></div>
+     <div class="pstats"><div class="pstat"><div class="n save">${money(keptLo)}–${money(keptHi)}</div><div class="k">gross fee difference per $1,000 shifted to owned pickup</div></div></div>
+     <p class="fine" style="margin-top:1rem">Scenario only: published DoorDash tiers are 15–30% and U.S. Uber Eats tiers are 20–30%. This uses an unconfirmed ~${(b.directRate*100).toFixed(1)}% direct-processing assumption before fixed fees. If the order remains delivery, subtract direct-fulfillment and added operating costs. <a href="https://merchants.doordash.com/en-us/marketplace/how-it-works-for-restaurants" target="_blank" rel="noopener noreferrer">DoorDash pricing</a> · <a href="https://merchants.ubereats.com/us/en/pricing/" target="_blank" rel="noopener noreferrer">Uber Eats pricing</a></p></section>`;
+  if(detailed)return [
+   cover(b,`${bizName(b)} does not need another storefront. It needs one consent-aware customer system behind the storefronts it already has.`),
+   `<section class="slide"><p class="eyebrow">What I can already verify</p><h2>${bizName(b)} has more owned infrastructure than it appears.</h2><p class="lead">Public facts only — every item links to its source:</p>${factsList(b,(b.observed||[]).slice(0,4))}</section>`,
+   `<section class="slide"><p class="eyebrow warm">What needs protection first</p><h2>${bizName(b)} has permission to build loyalty — and public paths to clean up.</h2><p class="lead">These two facts shape the safest first phase:</p>${factsList(b,(b.observed||[]).slice(4,6))}<p class="fine" style="margin-top:1rem">Fix the public front door, then build follow-up only from owned, opted-in relationships.</p></section>`,
+   foodSystemSlide(b),scenario,foodEconomicsSlide(b),foodArchitectureSlide(b),foodAudienceSlide(b),foodRoadmapSlide(b),
+   solutionsSlide(foodSols(b)),foodInputsSlide(b),
+   askSlide(b,["Open one ordinary month of marketplace, POS, website, membership, and catering records.","I replace every assumption with your actual channel economics.","We leave with a phased keep, connect, replace, or do-nothing plan."])
+  ];
+  return [
+   cover(b,"You've built something people seek out. Here's where revenue quietly leaks — and how to keep more of what you already earn."),
+   `<section class="slide"><p class="eyebrow">What I can already see</p><h2>I looked at your setup first.</h2><p class="lead">All public — from your ordering pages and delivery listings:</p>${factsList(b)}</section>`,
+   scenario,
+   `<section class="slide"><p class="eyebrow warm">Leaking now · scattered ordering</p><h2>Customers reach you through several public ordering paths.</h2><div class="pchips">${(b.surfaces||[]).map(s=>`<span class="pchip">${esc(s)}</span>`).join("")}</div><p class="lead" style="margin-top:1.4rem">Each one can split sales data, repeat customers, and the brand — and add hours reconciling payouts.</p></section>`,
+   `<section class="slide"><p class="eyebrow">The fix · one home you own</p><h2>One ordering home that builds your list.</h2><div class="pflow"><div class="pstep"><span class="s">01</span><b>Order</b></div><div class="parrow">→</div><div class="pstep"><span class="s">02</span><b>Pay</b></div><div class="parrow">→</div><div class="pstep"><span class="s">03</span><b>Opt in</b></div><div class="parrow">→</div><div class="pstep"><span class="s">04</span><b>Reorder direct</b></div><div class="parrow">→</div><div class="pstep"><span class="s">05</span><b>One dashboard</b></div></div></section>`,
+   solutionsSlide(foodSols(b)),askSlide(b,["Bring recent marketplace payout reports and a month of card statements.","I turn every rate here into actual dollars.","You leave knowing exactly where the money is."])
+  ];
+}
+function serviceSlides(b){
+  const cardNow=b.onlineVolume*b.currentRate+b.onlineTxns*(b.currentFixed||.30);
+  const cardAfter=b.onlineVolume*(b.stripeRate||.029)+b.onlineTxns*(b.stripeFixed||.30);
+  const cardSave=Math.max(0,cardNow-cardAfter);
+  const noShowLoss=b.servicesMo*b.noShowRate*b.avgTicket, noShowRec=noShowLoss*(b.noShowRecoverPct||.70);
+  const timeVal=b.adminHoursMo*b.hourlyValue, hard=cardSave+ (b.saasReducibleMo||0) + noShowRec;
+  const payback=hard>0?b.buildFee/hard:null, mx=Math.max(cardNow,cardAfter,1);
+  return [
+   cover(b,"Where your money and your hours are quietly going — and what one connected system gives back."),
+   `<section class="slide"><p class="eyebrow">What I can already see</p><h2>I looked before I knocked.</h2>
+     <p class="lead">All public — from your site, booking page, and checkout:</p>${factsList(b)}</section>`,
+   `<section class="slide"><p class="eyebrow warm">Leaking now · the small, checkable one</p><h2>You're paying a platform tax on every online sale.</h2>
+     <p class="lead">Published pricing suggests a payment-cost gap worth checking against a direct checkout.</p>
+     <div class="pbars"><div class="pbar"><span class="lab">Now</span><div class="ptrack"><div class="pfill leak" data-w="100"></div></div><span class="val leak">${money(cardNow)}</span></div>
+     <div class="pbar"><span class="lab">Direct</span><div class="ptrack"><div class="pfill save" data-w="${(cardAfter/mx*100).toFixed(1)}"></div></div><span class="val save">${money(cardAfter)}</span></div></div>
+     <div class="pstats"><div class="pstat"><div class="n save">${money(cardSave)}</div><div class="k">back / month</div></div><div class="pstat"><div class="n save">${money(cardSave*12)}</div><div class="k">back / year</div></div></div>
+     <p class="fine" style="margin-top:1rem">Small — but checkable on your own statement. That's the point: only what's true.</p></section>`,
+   `<section class="slide"><p class="eyebrow warm">Leaking now · the bigger one</p><h2>The real cost is the hours and the empty chairs.</h2>
+     <div class="pstats"><div class="pstat"><div class="n leak">${money(noShowLoss)}</div><div class="k">missed / month<br>(${b.servicesMo} · ${Math.round(b.noShowRate*100)}% · ${money(b.avgTicket)})</div></div>
+     <div class="pstat"><div class="n leak">${money(b.saasReducibleMo||0)}</div><div class="k">tools / month</div></div>
+     <div class="pstat"><div class="n leak">${b.adminHoursMo} hrs</div><div class="k">/ month by hand</div></div></div>
+     <p class="lead" style="margin-top:1.4rem">Deposits + automatic reminders recover most missed appointments; one flow removes the copy-paste.</p></section>`,
+   `<section class="slide"><p class="eyebrow">The fix · one connected system</p><h2>Everything from "book me" to "come back" in one flow.</h2>
+     <div class="pflow"><div class="pstep"><span class="s">01</span><b>Book</b></div><div class="parrow">→</div><div class="pstep"><span class="s">02</span><b>Deposit</b></div><div class="parrow">→</div><div class="pstep"><span class="s">03</span><b>Reminders</b></div><div class="parrow">→</div><div class="pstep"><span class="s">04</span><b>Rebook</b></div><div class="parrow">→</div><div class="pstep"><span class="s">05</span><b>One record</b></div></div>
+     <p class="lead" style="margin-top:1.4rem">One system built around how you already work.</p></section>`,
+   solutionsSlide(serviceSols(b)),
+   `<section class="slide"><p class="eyebrow">The bottom line</p><h2>What one system gives back each month.</h2>
+     <div class="pstats"><div class="pstat"><div class="phead">${money(hard)}</div><div class="k">hard dollars back / month</div></div></div>
+     <p class="lead" style="margin-top:.6rem"><strong>${money(hard)}/mo</strong> before counting ~${b.adminHoursMo} hrs back${payback?` — a ${money(b.buildFee)} system pays for itself in about <span class="save-ink">${payback.toFixed(1)} months</span>`:""}.</p></section>`,
+   askSlide(b,["Bring one month of card statements and a rough sense of your no-shows.","I replace every estimate here with your actual figures.","You leave knowing the number — build or not."]),
+  ];
+}
+router();
+
+if("serviceWorker" in navigator && location.protocol!=="file:"){
+  addEventListener("load",async()=>{
+    try{
+      const registration=await navigator.serviceWorker.register("./sw.js",{scope:"./",updateViaCache:"none"});
+      await registration.update();
+    }catch(error){
+      console.warn("Understudy Audit could not enable offline mode:",error);
+    }
+  });
+}
+</script>
+</body>
+</html>

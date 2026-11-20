@@ -1,0 +1,68 @@
+name: Test and publish Understudy Audit
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run the privacy and offline tests
+        run: npm test
+
+  publish:
+    # Publishing stays a manual step; it runs only after the tests pass.
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the reviewed app
+        uses: actions/checkout@v4
+
+      - name: Prepare the public app only
+        shell: bash
+        run: |
+          mkdir -p _site/icons
+          cp index.html _site/index.html
+          cp audit-app.html _site/audit-app.html
+          cp discovery.js _site/discovery.js
+          cp meetings.js meeting-ui.js meeting-icons.js meetings.css _site/
+          cp manifest.webmanifest _site/manifest.webmanifest
+          cp sw.js _site/sw.js
+          cp .nojekyll _site/.nojekyll
+          cp icons/*.png _site/icons/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the app
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4

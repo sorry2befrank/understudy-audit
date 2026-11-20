@@ -1,0 +1,13 @@
+{
+  "name": "understudy-audit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline business-audit PWA with local-only data and a consented research step.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
