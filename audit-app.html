@@ -872,7 +872,7 @@ const askSlide=(b,lines)=>`<section class="slide"><p class="eyebrow">The ask</p>
 const solutionsSlide=cards=>`<section class="slide"><p class="eyebrow">What I'd build for you</p>
   <h2>Sized to what I found — you choose where to start.</h2>
   <div class="sols">${cards.map(c=>`<div class="sol"><div class="sol-h">${esc(c.title)}</div><div class="sol-f">${safeFact(c.fix)}</div><div class="sol-b">${esc(c.benefit)}</div></div>`).join("")}</div>
-  <p class="fine" style="margin-top:1.1rem">Start with one — each pays for itself before the next.</p></section>`;
+  <p class="fine" style="margin-top:1.1rem">Start with one, and check its real results before adding the next.</p></section>`;
 function foodSols(b){
   if(Array.isArray(b.solutionCards)&&b.solutionCards.length)return b.solutionCards.slice(0,3);
   const direct=1000*b.directRate,keptLo=1000*b.commissionLow-direct,keptHi=1000*b.commissionHigh-direct;
@@ -1015,8 +1015,8 @@ function serviceSlides(b){
      <p class="lead" style="margin-top:1.4rem">One system built around how you already work.</p></section>`,
    solutionsSlide(serviceSols(b)),
    `<section class="slide"><p class="eyebrow">The bottom line</p><h2>What one system gives back each month.</h2>
-     <div class="pstats"><div class="pstat"><div class="phead">${money(hard)}</div><div class="k">hard dollars back / month</div></div></div>
-     <p class="lead" style="margin-top:.6rem"><strong>${money(hard)}/mo</strong> before counting ~${b.adminHoursMo} hrs back${payback?` — a ${money(b.buildFee)} system pays for itself in about <span class="save-ink">${payback.toFixed(1)} months</span>`:""}.</p></section>`,
+     <div class="pstats"><div class="pstat"><div class="phead">${money(hard)}</div><div class="k">estimated dollars back / month</div></div></div>
+     <p class="lead" style="margin-top:.6rem"><strong>${money(hard)}/mo</strong> before counting ~${b.adminHoursMo} hrs back${payback?` — on these estimates, a ${money(b.buildFee)} system would pay for itself in about <span class="save-ink">${payback.toFixed(1)} months</span>`:""}.</p></section>`,
    askSlide(b,["Bring one month of card statements and a rough sense of your no-shows.","I replace every estimate here with your actual figures.","You leave knowing the number — build or not."]),
   ];
 }
